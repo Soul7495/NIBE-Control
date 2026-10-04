@@ -87,6 +87,7 @@ class NibeControlCard extends HTMLElement {
   this.shadowRoot.innerHTML=`<style>${this.styles()}</style><style>
   .control-missing{margin-top:15px;padding:12px;border:1px solid color-mix(in srgb,var(--warning-color,#d89521) 45%,transparent);border-radius:12px;background:color-mix(in srgb,var(--warning-color,#d89521) 8%,transparent)}
   .control-missing b,.control-missing span{display:block}.control-missing span{margin-top:5px;color:var(--secondary-text-color);font-size:.7rem;line-height:1.4}.control-missing code{font-size:.65rem;overflow-wrap:anywhere}
+  .target-help{display:block;margin-top:8px;color:var(--secondary-text-color);font-size:.68rem;line-height:1.4}
   .pair .wide{grid-column:1/-1}.mode-control{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;font-size:.72rem;color:var(--secondary-text-color)}
   .mode-control select{min-width:130px;padding:7px 28px 7px 9px;border-radius:9px;border:1px solid var(--nc-line);background:var(--card-background-color);color:var(--primary-text-color)}
   </style><main class="app ${mode}">
@@ -116,7 +117,7 @@ class NibeControlCard extends HTMLElement {
   const sg=this.available("sgMode")?statusLabel("sgMode",this.val("sgMode")):"Nicht verfügbar";
  const wh=this.st("waterHeater"), ops=wh?.attributes?.operation_list||[];
   const evccPresent=["evccEnabled","evccCharging","evccAction","evccMode"].some(r=>this.st(r));
-  return `<div class="grid"><section class="panel climate-panel"><div class="title"><div><small>RAUMKLIMA</small><h2>${this.value("room")}</h2></div><ha-icon icon="mdi:home-thermometer-outline"></ha-icon></div>${this.targetControl()}</section>
+  return `<div class="grid"><section class="panel climate-panel"><div class="title"><div><small>RAUMTEMPERATUR IST</small><h2>${this.value("room")}</h2></div><ha-icon icon="mdi:home-thermometer-outline"></ha-icon></div>${this.targetControl()}</section>
    <section class="panel"><div class="title"><div><small>WARMWASSER</small><h2>${this.value("hotWaterTop")}</h2></div><ha-icon icon="mdi:water-boiler"></ha-icon></div><div class="pair"><span>BT6 Ladefühler <b>${this.value("hotWaterCharge")}</b></span><span>Betrieb <b>${esc(wh?.state||"—")}</b></span></div>${ops.length?`<label>Modus<select id="hw-mode">${ops.map(o=>`<option ${o===wh.state?"selected":""}>${esc(o)}</option>`).join("")}</select></label>`:`<p class="hint">Die NIBE-Integration bietet aktuell keinen schaltbaren Warmwassermodus an.</p>`}</section>
    <section class="panel energy"><div class="title"><div><small>ENERGIE · PV · EVCC</small><h2>${this.value("electrical")}</h2></div><ha-icon icon="mdi:solar-power-variant-outline"></ha-icon></div><div class="pair"><span>SG Ready <b>${esc(sg)}</b></span><span>Heizstab <b>${this.value("additionalHeat")}</b></span>${evccPresent?`<span>PV-Optimierung <b>${yes(this.val("evccEnabled"))?"Aktiv":"Inaktiv"}</b></span><span>EVCC-Anforderung <b>${yes(this.val("evccCharging"))?"Aktiv":"Keine"}</b></span><span>PV-Aktion <b>${esc(this.val("evccAction")||"—")}</b></span><span>EVCC-Modus <b>${esc(this.val("evccMode")||"—")}</b></span>`:`<span class="wide">EVCC <b>Nicht erkannt</b></span>`}</div>${this.evccControl()}</section>
   </div><div class="metric-row">${["supplyTarget","supply","return","hpSupply","degreeMinutes","flow"].map(r=>this.metric(r)).join("")}</div>`;
@@ -124,7 +125,7 @@ class NibeControlCard extends HTMLElement {
  targetControl(){
   const s=this.st("roomSetpoint"), now=valid(s)?Number(s.state):NaN, min=s?.attributes?.min??10, max=s?.attributes?.max??30, step=s?.attributes?.step??0.5;
   if(!s || !valid(s)) return `<div class="control-missing"><b>Raum-Sollwert nicht verfügbar</b><span>Aktiviere zuerst <code>number.room_sensor_set_point_value_climate_system_1_40207</code>.</span></div>`;
-  return `<div class="target"><span>Gewünschte Raumtemperatur</span><div><button id="temp-down" aria-label="Solltemperatur senken">−</button><output id="target-output">${fmt(now)} °C</output><button id="temp-up" aria-label="Solltemperatur erhöhen">+</button></div><input id="target" type="range" min="${min}" max="${max}" step="${step}" value="${now}" aria-label="Gewünschte Raumtemperatur"></div>`;
+  return `<div class="target"><span>Raum-Solltemperatur · Heizkreis S1</span><div><button id="temp-down" aria-label="Raum-Solltemperatur senken">−</button><output id="target-output" aria-live="polite">${fmt(now)} °C</output><button id="temp-up" aria-label="Raum-Solltemperatur erhöhen">+</button></div><input id="target" type="range" min="${min}" max="${max}" step="${step}" value="${now}" aria-label="Raum-Solltemperatur für Heizkreis S1"><small class="target-help">NIBE-Zielwert aus Register 40207. Er beeinflusst die Regelung nur, wenn der Raumfühler für Heizkreis S1 in NIBE aktiviert ist.</small></div>`;
  }
  evccControl(){const s=this.st("evccMode"),options=s?.attributes?.options||[];if(!s||!options.length)return "";return `<label class="mode-control" for="evcc-mode">EVCC-Modus<select id="evcc-mode">${options.map(o=>`<option ${o===s.state?"selected":""}>${esc(o)}</option>`).join("")}</select></label>`;}
  charts(){return `<div class="chart-grid">${["heating","power","water"].map(k=>`<section class="panel chart"><div class="chart-head"><div><small>24 STUNDEN</small><h3>${k==="heating"?"Heizkreis":k==="power"?"Verdichter & Energie":"Warmwasser"}</h3></div><span class="legend"></span></div><div class="plot" id="plot-${k}"><div class="loader">Historie wird geladen …</div></div></section>`).join("")}</div>`;}
@@ -143,6 +144,8 @@ class NibeControlCard extends HTMLElement {
  paintValues(){
   if(!this.shadowRoot?.querySelector("main"))return;
   this.shadowRoot.querySelectorAll("[data-role]").forEach(el=>el.textContent=this.value(el.dataset.role));
+  const setpoint=this.st("roomSetpoint"), slider=this.shadowRoot.getElementById("target"), output=this.shadowRoot.getElementById("target-output");
+  if(valid(setpoint) && slider && output){const value=Number(setpoint.state);if(Number.isFinite(value)){slider.value=String(value);output.textContent=`${fmt(value)} °C`;}}
  }
  async loadHistory(){
   const sets={heating:[["outdoor","#78aee8"],["supplyTarget","#e9b15b"],["supply","#ee765f"],["return","#8fc58a"]],power:[["compressorHz","#49b6a1"],["electrical","#e9b15b"]],water:[["hotWaterCharge","#55a8d8"],["hotWaterTop","#ee765f"]]};
