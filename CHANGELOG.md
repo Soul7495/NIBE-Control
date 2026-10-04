@@ -1,4 +1,11 @@
 # Changelog
+## 0.4.0
+- responsive Startseite für Smartphone, Tablet und Shelly Wall Display neu geordnet
+- eigenes ruhiges Energie-/PV-Board für EVCC und SG Ready
+- PV-Aktion, EVCC-Anforderung, Anhebung und SG-Ready-Zustand klar getrennt
+- kompaktere Tablet- und Querformat-Darstellung ergänzt
+- Live-Aktualisierung aller sichtbaren Kernwerte verbessert
+
 ## 0.3.3
 - Raum-Sollwertsteuerung aus der normalen Oberfläche entfernt
 - gemessene Raum-Isttemperatur bleibt prominent sichtbar
