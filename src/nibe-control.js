@@ -1,9 +1,10 @@
-/* NIBE Control 0.3.2 — local Home Assistant dashboard */
-const VERSION = "0.3.2";
+/* NIBE Control 0.3.3 — local Home Assistant dashboard */
+const VERSION = "0.3.3";
 const PROFILE = {
  outdoor:{r:"30002",e:"sensor.current_outdoor_temperature_bt1_30002",l:"Außen",t:"BT1",u:"°C"},
  room:{e:"climate.vvms320_climate_system_s1",a:"current_temperature",l:"Innen",u:"°C"},
- roomSetpoint:{r:"40207",e:"number.room_sensor_set_point_value_climate_system_1_40207",l:"Raum-Sollwert",u:"°C",req:1},
+ roomSetpoint:{r:"40207",e:"number.room_sensor_set_point_value_climate_system_1_40207",l:"Raum-Sollwert (Register)",u:"°C",diag:1},
+ useRoomSensor:{r:"40203",e:"switch.use_room_sensor_climate_system_1_40203",l:"Raumfühlerregelung",diag:1},
  supply:{r:"30006",e:"sensor.supply_line_bt2_30006",l:"Vorlauf",t:"BT2",u:"°C"},
  return:{r:"30008",e:"sensor.return_line_bt3_30008",l:"Rücklauf",t:"BT3",u:"°C"},
  supplyTarget:{r:"31018",e:"sensor.calculated_supply_climate_system_1_31018",l:"Vorlauf Soll",u:"°C",req:1},
@@ -85,12 +86,6 @@ class NibeControlCard extends HTMLElement {
  render(){
   const [mode,label]=this.operating();
   this.shadowRoot.innerHTML=`<style>${this.styles()}</style><style>
-  .control-missing{margin-top:15px;padding:12px;border:1px solid color-mix(in srgb,var(--warning-color,#d89521) 45%,transparent);border-radius:12px;background:color-mix(in srgb,var(--warning-color,#d89521) 8%,transparent)}
-  .control-missing b,.control-missing span{display:block}.control-missing span{margin-top:5px;color:var(--secondary-text-color);font-size:.7rem;line-height:1.4}.control-missing code{font-size:.65rem;overflow-wrap:anywhere}
-  .target-help{display:block;margin-top:8px;color:var(--secondary-text-color);font-size:.68rem;line-height:1.4}
-  .target-current{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding:8px 10px;border-radius:10px;background:var(--nc-card);font-size:.72rem;color:var(--secondary-text-color)}.target-current b{color:var(--primary-text-color)}
-  .target-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}.target-actions button{width:auto;height:36px;padding:0 12px;font-size:.74rem}.target-actions .apply{border-color:transparent;background:var(--nc-teal);color:#fff}.target-actions button:disabled,.target>div button:disabled{cursor:not-allowed;opacity:.45}
-  .target-status{display:block;min-height:18px;margin-top:6px;color:var(--secondary-text-color);font-size:.68rem}.target-status.error{color:var(--error-color,#db4437)}.target-status.success{color:var(--success-color,#3d8b62)}
   .pair .wide{grid-column:1/-1}.mode-control{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;font-size:.72rem;color:var(--secondary-text-color)}
   .mode-control select{min-width:130px;padding:7px 28px 7px 9px;border-radius:9px;border:1px solid var(--nc-line);background:var(--card-background-color);color:var(--primary-text-color)}
   </style><main class="app ${mode}">
@@ -120,17 +115,10 @@ class NibeControlCard extends HTMLElement {
   const sg=this.available("sgMode")?statusLabel("sgMode",this.val("sgMode")):"Nicht verfügbar";
  const wh=this.st("waterHeater"), ops=wh?.attributes?.operation_list||[];
   const evccPresent=["evccEnabled","evccCharging","evccAction","evccMode"].some(r=>this.st(r));
-  return `<div class="grid"><section class="panel climate-panel"><div class="title"><div><small>RAUMTEMPERATUR IST</small><h2>${this.value("room")}</h2></div><ha-icon icon="mdi:home-thermometer-outline"></ha-icon></div>${this.targetControl()}</section>
+  return `<div class="grid"><section class="panel climate-panel"><div class="title"><div><small>RAUMTEMPERATUR IST</small><h2>${this.value("room")}</h2></div><ha-icon icon="mdi:home-thermometer-outline"></ha-icon></div><p class="hint">Gemessene Raumtemperatur des NIBE-Raumfühlers. Der MyUplink-Sollwert wird von Home Assistant derzeit nicht bereitgestellt.</p></section>
    <section class="panel"><div class="title"><div><small>WARMWASSER</small><h2>${this.value("hotWaterTop")}</h2></div><ha-icon icon="mdi:water-boiler"></ha-icon></div><div class="pair"><span>BT6 Ladefühler <b>${this.value("hotWaterCharge")}</b></span><span>Betrieb <b>${esc(wh?.state||"—")}</b></span></div>${ops.length?`<label>Modus<select id="hw-mode">${ops.map(o=>`<option ${o===wh.state?"selected":""}>${esc(o)}</option>`).join("")}</select></label>`:`<p class="hint">Die NIBE-Integration bietet aktuell keinen schaltbaren Warmwassermodus an.</p>`}</section>
    <section class="panel energy"><div class="title"><div><small>ENERGIE · PV · EVCC</small><h2>${this.value("electrical")}</h2></div><ha-icon icon="mdi:solar-power-variant-outline"></ha-icon></div><div class="pair"><span>SG Ready <b>${esc(sg)}</b></span><span>Heizstab <b>${this.value("additionalHeat")}</b></span>${evccPresent?`<span>PV-Optimierung <b>${yes(this.val("evccEnabled"))?"Aktiv":"Inaktiv"}</b></span><span>EVCC-Anforderung <b>${yes(this.val("evccCharging"))?"Aktiv":"Keine"}</b></span><span>PV-Aktion <b>${esc(this.val("evccAction")||"—")}</b></span><span>EVCC-Modus <b>${esc(this.val("evccMode")||"—")}</b></span>`:`<span class="wide">EVCC <b>Nicht erkannt</b></span>`}</div>${this.evccControl()}</section>
   </div><div class="metric-row">${["supplyTarget","supply","return","hpSupply","degreeMinutes","flow"].map(r=>this.metric(r)).join("")}</div>`;
- }
- targetControl(){
-  const s=this.st("roomSetpoint"), now=valid(s)?Number(s.state):NaN, min=s?.attributes?.min??10, max=s?.attributes?.max??30, step=s?.attributes?.step??0.5;
-  if(!s || !valid(s)) return `<div class="control-missing"><b>Raum-Sollwert nicht verfügbar</b><span>Aktiviere zuerst <code>number.room_sensor_set_point_value_climate_system_1_40207</code>.</span></div>`;
-  if(!this._setpointDirty&&!this._setpointSaving)this._setpointDraft=now;
-  const draft=Number.isFinite(this._setpointDraft)?this._setpointDraft:now;
-  return `<div class="target"><span>Raum-Solltemperatur · Heizkreis S1</span><div class="target-current"><span>Aktuell in NIBE</span><b id="target-current">${fmt(now)} °C</b></div><div><button id="temp-down" aria-label="Raum-Solltemperatur senken">−</button><output id="target-output" aria-live="polite">${fmt(draft)} °C</output><button id="temp-up" aria-label="Raum-Solltemperatur erhöhen">+</button></div><input id="target" type="range" min="${min}" max="${max}" step="${step}" value="${draft}" aria-label="Neue Raum-Solltemperatur für Heizkreis S1"><div class="target-actions"><button id="temp-discard" type="button" disabled>Verwerfen</button><button id="temp-apply" class="apply" type="button" disabled>Übernehmen</button></div><small id="target-status" class="target-status" role="status" aria-live="polite"></small><small class="target-help">Register 40207 ist der Basis-Sollwert. SG Ready kann die wirksame Temperatur zusätzlich anheben, ohne diesen Basiswert zu verändern.</small></div>`;
  }
  evccControl(){const s=this.st("evccMode"),options=s?.attributes?.options||[];if(!s||!options.length)return "";return `<label class="mode-control" for="evcc-mode">EVCC-Modus<select id="evcc-mode">${options.map(o=>`<option ${o===s.state?"selected":""}>${esc(o)}</option>`).join("")}</select></label>`;}
  charts(){return `<div class="chart-grid">${["heating","power","water"].map(k=>`<section class="panel chart"><div class="chart-head"><div><small>24 STUNDEN</small><h3>${k==="heating"?"Heizkreis":k==="power"?"Verdichter & Energie":"Warmwasser"}</h3></div><span class="legend"></span></div><div class="plot" id="plot-${k}"><div class="loader">Historie wird geladen …</div></div></section>`).join("")}</div>`;}
@@ -139,27 +127,14 @@ class NibeControlCard extends HTMLElement {
   return `<section class="panel setup"><div class="title"><div><small>ENTITY DISCOVERY</small><h2>Datencheck</h2></div><span class="score">${Object.keys(PROFILE).filter(r=>this.available(r)).length}/${Object.keys(PROFILE).length}</span></div><p>Für das vollständige Dashboard müssen nur die unten aufgeführten empfohlenen Entitäten aktiviert werden. NIBE Control aktiviert nichts selbst.</p><ul>${rows}</ul><aside><b>So aktivierst du einen Wert:</b> Einstellungen → Geräte & Dienste → NIBE Heat Pump → Gerät → Entitäten. Dort „deaktivierte Entitäten anzeigen“ und die gewünschte Entity öffnen.</aside></section>`;
  }
  diagnostics(){return `<section class="panel"><div class="title"><div><small>READ ONLY</small><h2>Technische Diagnose</h2></div><ha-icon icon="mdi:stethoscope"></ha-icon></div><div class="diag-grid">${Object.entries(PROFILE).filter(([,p])=>p.diag).map(([r])=>this.metric(r)).join("")}</div><p class="hint">Unbekannte Statuscodes werden bewusst nicht interpretiert. GP1 bleibt wegen der Register 31103/31637 bis zum Livevergleich ungemappt.</p></section>`;}
- syncSetpointControl(){
-  const state=this.st("roomSetpoint"), current=valid(state)?Number(state.state):NaN, slider=this.shadowRoot?.getElementById("target"), output=this.shadowRoot?.getElementById("target-output"), currentEl=this.shadowRoot?.getElementById("target-current"), apply=this.shadowRoot?.getElementById("temp-apply"), discard=this.shadowRoot?.getElementById("temp-discard"), down=this.shadowRoot?.getElementById("temp-down"), up=this.shadowRoot?.getElementById("temp-up"), status=this.shadowRoot?.getElementById("target-status");
-  if(!slider||!Number.isFinite(current))return;
-  if(this._setpointSaving&&Number.isFinite(this._setpointDraft)&&Math.abs(current-this._setpointDraft)<0.001){this._setpointSaving=false;this._setpointDirty=false;this._setpointMessage="Von NIBE übernommen";this._setpointTone="success";}
-  if(!this._setpointDirty&&!this._setpointSaving)this._setpointDraft=current;
-  const draft=Number.isFinite(this._setpointDraft)?this._setpointDraft:current;
-  this._setpointDirty=Math.abs(draft-current)>=0.001;
-  slider.value=String(draft);if(output)output.textContent=`${fmt(draft)} °C`;if(currentEl)currentEl.textContent=`${fmt(current)} °C`;
-  const busy=!!this._setpointSaving;slider.disabled=busy;if(down)down.disabled=busy;if(up)up.disabled=busy;if(apply)apply.disabled=busy||!this._setpointDirty;if(discard)discard.disabled=busy||!this._setpointDirty;
-  if(status){status.textContent=this._setpointMessage||(this._setpointDirty?"Noch nicht übernommen":"");status.className=`target-status ${this._setpointTone||""}`.trim();}
- }
  bind(){
   this.shadowRoot.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{this.shadowRoot.querySelectorAll("nav button,.tab").forEach(x=>x.classList.remove("active")); b.classList.add("active"); this.shadowRoot.getElementById(b.dataset.tab).classList.add("active");});
-  const slider=this.shadowRoot.getElementById("target"); if(slider){const setDraft=v=>{this._setpointDraft=Math.min(Number(slider.max),Math.max(Number(slider.min),Number(v)));this._setpointDirty=true;this._setpointMessage="";this._setpointTone="";this.syncSetpointControl();};slider.oninput=e=>setDraft(e.target.value);const step=Number(slider.step||.5);this.shadowRoot.getElementById("temp-down").onclick=()=>setDraft(Number(slider.value)-step);this.shadowRoot.getElementById("temp-up").onclick=()=>setDraft(Number(slider.value)+step);this.shadowRoot.getElementById("temp-discard").onclick=()=>{this._setpointDirty=false;this._setpointMessage="Änderung verworfen";this._setpointTone="";this.syncSetpointControl();};this.shadowRoot.getElementById("temp-apply").onclick=async()=>{if(!this._setpointDirty||this._setpointSaving||!this.mapping.roomSetpoint)return;this._setpointSaving=true;this._setpointMessage="Wird an NIBE übertragen …";this._setpointTone="";this.syncSetpointControl();try{await this._hass.callService("number","set_value",{entity_id:this.mapping.roomSetpoint,value:this._setpointDraft});this._setpointMessage="Gesendet · Bestätigung durch NIBE ausstehend";this.syncSetpointControl();}catch(e){this._setpointSaving=false;this._setpointMessage="Änderung konnte nicht übertragen werden";this._setpointTone="error";this.syncSetpointControl();}};this.syncSetpointControl();}
   const select=this.shadowRoot.getElementById("hw-mode"); if(select) select.onchange=e=>this._hass.callService("water_heater","set_operation_mode",{entity_id:this.mapping.waterHeater,operation_mode:e.target.value});
   const evcc=this.shadowRoot.getElementById("evcc-mode"); if(evcc) evcc.onchange=e=>this._hass.callService("select","select_option",{entity_id:this.mapping.evccMode,option:e.target.value});
  }
  paintValues(){
   if(!this.shadowRoot?.querySelector("main"))return;
   this.shadowRoot.querySelectorAll("[data-role]").forEach(el=>el.textContent=this.value(el.dataset.role));
-  this.syncSetpointControl();
  }
  async loadHistory(){
   const sets={heating:[["outdoor","#78aee8"],["supplyTarget","#e9b15b"],["supply","#ee765f"],["return","#8fc58a"]],power:[["compressorHz","#49b6a1"],["electrical","#e9b15b"]],water:[["hotWaterCharge","#55a8d8"],["hotWaterTop","#ee765f"]]};
