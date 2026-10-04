@@ -15,3 +15,12 @@ test("room setpoint has no write control",()=>{
   assert.doesNotMatch(source,/id="temp-apply"/);
   assert.doesNotMatch(source,/callService\("number","set_value"/);
 });
+test("responsive energy board exposes EVCC and SG Ready without invented PV values",()=>{
+  const source=readFileSync(new URL("../src/nibe-control.js",import.meta.url),"utf8");
+  assert.match(source,/class="panel energy-board"/);
+  assert.match(source,/data-state="evccEnabled"/);
+  assert.match(source,/data-state="evccCharging"/);
+  assert.match(source,/data-status="sgMode"/);
+  assert.match(source,/@media\(max-width:1100px\)/);
+  assert.match(source,/@media\(min-width:700px\) and \(max-height:760px\)/);
+});
