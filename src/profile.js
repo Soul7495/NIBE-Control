@@ -3,6 +3,7 @@ export const PROFILE = {
   roles: {
     outdoor: { register: "30002", entity: "sensor.current_outdoor_temperature_bt1_30002", label: "Außen", tag: "BT1", unit: "°C", group: "core" },
     room: { entity: "climate.vvms320_climate_system_s1", attribute: "current_temperature", label: "Innen", unit: "°C", group: "core" },
+    roomSetpoint: { register: "40207", entity: "number.room_sensor_set_point_value_climate_system_1_40207", label: "Raum-Sollwert", unit: "°C", group: "control" },
     supply: { register: "30006", entity: "sensor.supply_line_bt2_30006", label: "Vorlauf", tag: "BT2", unit: "°C", group: "core" },
     return: { register: "30008", entity: "sensor.return_line_bt3_30008", label: "Rücklauf", tag: "BT3", unit: "°C", group: "core" },
     supplyTarget: { register: "31018", entity: "sensor.calculated_supply_climate_system_1_31018", label: "Vorlauf Soll", unit: "°C", group: "recommended" },
@@ -28,13 +29,19 @@ export const PROFILE = {
     defrost: { register: "31806", entity: "sensor.defrosting_eb101_31806", label: "Abtauung", group: "recommended" },
     alarm: { register: "31976", entity: "sensor.alarm_number_31976", label: "Alarmnummer", group: "core" },
     climate: { entity: "climate.vvms320_climate_system_s1", label: "Heizkreis", group: "control" },
-    waterHeater: { entity: "water_heater.vvms320_hot_water", label: "Warmwasser", group: "control" }
+    waterHeater: { entity: "water_heater.vvms320_hot_water", label: "Warmwasser", group: "control" },
+    evccEnabled: { entity: "binary_sensor.evcc_nibe_enabled", label: "EVCC NIBE", group: "optional" },
+    evccCharging: { entity: "binary_sensor.evcc_nibe_charging", label: "EVCC-Anforderung", group: "optional" },
+    evccAction: { entity: "sensor.evcc_nibe_pv_action", label: "PV-Aktion", group: "optional" },
+    evccActionValue: { entity: "sensor.evcc_nibe_pv_action_value", label: "Anhebung", group: "optional" },
+    evccMode: { entity: "select.evcc_nibe_mode", label: "EVCC-Modus", group: "optional" }
   }
 };
 
 export const WRITE_ALLOWLIST = Object.freeze({
-  climate: ["climate.set_temperature"],
-  waterHeater: ["water_heater.set_operation_mode"]
+  roomSetpoint: ["number.set_value"],
+  waterHeater: ["water_heater.set_operation_mode"],
+  evccMode: ["select.select_option"]
 });
 
 export function registerFromUniqueId(uniqueId = "") {
