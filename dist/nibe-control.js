@@ -1,5 +1,5 @@
-/* NIBE Control 0.2.0 — local Home Assistant dashboard */
-const VERSION = "0.3.0";
+/* NIBE Control 0.3.1 — local Home Assistant dashboard */
+const VERSION = "0.3.1";
 const PROFILE = {
  outdoor:{r:"30002",e:"sensor.current_outdoor_temperature_bt1_30002",l:"Außen",t:"BT1",u:"°C"},
  room:{e:"climate.vvms320_climate_system_s1",a:"current_temperature",l:"Innen",u:"°C"},

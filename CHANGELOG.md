@@ -1,4 +1,9 @@
 # Changelog
+## 0.3.1
+- Raum-Isttemperatur und Raum-Solltemperatur eindeutig getrennt
+- Raum-Sollwert für Heizkreis S1 verständlich erklärt
+- Live-Synchronisierung des Sollwertreglers verbessert
+
 ## 0.3.0
 - Raum-Sollwert auf NIBE-Register 40207 korrigiert
 - Plus/Minus und Slider mit gültigem Ausgangswert und Begrenzung
