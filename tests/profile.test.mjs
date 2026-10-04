@@ -6,13 +6,12 @@ test("register is extracted from nibe unique id",()=>assert.equal(registerFromUn
 test("registry register beats exported entity fallback",()=>assert.equal(resolveRoles([{entity_id:"sensor.renamed",unique_id:"entry-30002"}]).outdoor,"sensor.renamed"));
 test("manual override wins",()=>assert.equal(resolveRoles([],{outdoor:"sensor.manual"}).outdoor,"sensor.manual"));
 test("unavailable state is rejected",()=>assert.equal(usableState({state:"unavailable"}),false));
-test("safe write allowlist is limited to explicit user controls",()=>assert.deepEqual(Object.keys(WRITE_ALLOWLIST).sort(),["evccMode","roomSetpoint","waterHeater"]));
+test("safe write allowlist is limited to verified user controls",()=>assert.deepEqual(Object.keys(WRITE_ALLOWLIST).sort(),["evccMode","waterHeater"]));
 test("current power 32177 is excluded",()=>assert.equal(Object.values(PROFILE.roles).some(x=>x.register==="32177"),false));
 test("electrical consumption uses register 32306",()=>assert.equal(PROFILE.roles.electrical.register,"32306"));
-test("room setpoint uses exported register 40207",()=>assert.equal(PROFILE.roles.roomSetpoint.register,"40207"));
-test("room setpoint requires an explicit apply action",()=>{
+test("room setpoint register remains diagnostic only",()=>assert.equal(PROFILE.roles.roomSetpoint.group,"diagnostic"));
+test("room setpoint has no write control",()=>{
   const source=readFileSync(new URL("../src/nibe-control.js",import.meta.url),"utf8");
-  assert.match(source,/id="temp-apply"/);
-  assert.match(source,/this\._setpointDirty/);
-  assert.doesNotMatch(source,/slider\.onchange=e=>setTemp/);
+  assert.doesNotMatch(source,/id="temp-apply"/);
+  assert.doesNotMatch(source,/callService\("number","set_value"/);
 });
