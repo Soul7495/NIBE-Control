@@ -1,4 +1,4 @@
-# NIBE Control 0.3.0
+# NIBE Control 0.3.3
 
 Dynamisches, lokales Home-Assistant-Dashboard für NIBE-Wärmepumpen der S-Serie. Das VVM-S320-Profil wurde gegen den Entity-Export vom 04.10.2026 mit 819 Entitäten geprüft.
 
@@ -10,7 +10,7 @@ Dynamisches, lokales Home-Assistant-Dashboard für NIBE-Wärmepumpen der S-Serie
 - lokale 24-h-SVG-Verläufe ohne externe Bibliothek
 - integrierter Datencheck für deaktivierte oder fehlende Entities
 - sichere Schreib-Allowlist
-- Raum-Solltemperatur über das passende VVM-S320-Register 40207
+- gemessene Raumtemperatur aus der NIBE-Climate-Entity
 - optionale EVCC-Status- und Modusanzeige
 - Light/Dark Theme und reduzierte Bewegung
 
@@ -23,10 +23,10 @@ Dynamisches, lokales Home-Assistant-Dashboard für NIBE-Wärmepumpen der S-Serie
 ## Empfohlene Entities
 Der Datencheck im Dashboard zeigt exakt, welche zusätzlichen Entities für die vollständige Ansicht noch deaktiviert sind. Es werden keine Entities automatisch aktiviert.
 
-Für die Raum-Solltemperatur muss `number.room_sensor_set_point_value_climate_system_1_40207` aktiviert sein.
+Der MyUplink-Raum-Sollwert wird von der vorhandenen lokalen Integration nicht zuverlässig bereitgestellt. Register 40207 wird daher ausschließlich im Diagnosebereich angezeigt und nicht beschrieben.
 
 ## Sicherheit
-`sensor.current_power_32177` wird nicht als Gesamtleistung genutzt. Dafür ist Register 32306 vorgesehen; 31807 bleibt die Außeneinheit. GP1 31103/31637 wird bis zum Livevergleich nicht automatisch gewählt. Kein rohes `number.*` oder `switch.*` wird bedienbar gemacht.
+`sensor.current_power_32177` wird nicht als Gesamtleistung genutzt. Dafür ist Register 32306 vorgesehen; 31807 bleibt die Außeneinheit. GP1 31103/31637 wird bis zum Livevergleich nicht automatisch gewählt. Register 40207 bleibt read-only. Kein rohes `number.*` oder `switch.*` wird allein aufgrund seiner Domain bedienbar gemacht.
 
 ## Entwicklung
 ```bash
