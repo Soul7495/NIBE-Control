@@ -1,4 +1,10 @@
 # Changelog
+## 0.3.2
+- Sollwertänderungen werden erst nach ausdrücklicher Bestätigung übertragen
+- aktueller NIBE-Basis-Sollwert bleibt separat sichtbar
+- Verwerfen-, Lade-, Erfolgs- und Fehlerzustand ergänzt
+- SG-Ready-Anhebung klar vom Basis-Sollwert getrennt
+
 ## 0.3.1
 - Raum-Isttemperatur und Raum-Solltemperatur eindeutig getrennt
 - Raum-Sollwert für Heizkreis S1 verständlich erklärt
