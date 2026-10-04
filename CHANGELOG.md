@@ -1,4 +1,11 @@
 # Changelog
+## 0.3.3
+- Raum-Sollwertsteuerung aus der normalen Oberfläche entfernt
+- gemessene Raum-Isttemperatur bleibt prominent sichtbar
+- Register 40207 und Status der Raumfühlerregelung 40203 nur noch in der Diagnose
+- irreführende Bezeichnung „Aktuell in NIBE“ entfernt
+- Schreibfreigabe für `number.set_value` entfernt
+
 ## 0.3.2
 - Sollwertänderungen werden erst nach ausdrücklicher Bestätigung übertragen
 - aktueller NIBE-Basis-Sollwert bleibt separat sichtbar
