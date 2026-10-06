@@ -1,4 +1,4 @@
-# NIBE Control 0.4.0
+# NIBE Control 0.4.1
 
 Dynamisches, lokales Home-Assistant-Dashboard für NIBE-Wärmepumpen der S-Serie. Das VVM-S320-Profil wurde gegen den Entity-Export vom 04.10.2026 mit 819 Entitäten geprüft.
 
