@@ -1,4 +1,10 @@
 # Changelog
+## 0.4.1
+- Verdichteranimation im dynamischen Anlagenschema exakt zentriert
+- nur der innere Rotor dreht; Rahmen, Werte und Anlagenlayout bleiben ruhig stehen
+- Darstellung auf Smartphone, Tablet und Wall Display stabilisiert
+- Bedienlogik, Entity-Mapping und Schreibschutz unverändert
+
 ## 0.4.0
 - responsive Startseite für Smartphone, Tablet und Shelly Wall Display neu geordnet
 - eigenes ruhiges Energie-/PV-Board für EVCC und SG Ready
