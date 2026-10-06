@@ -1,5 +1,6 @@
-/* NIBE Control 0.4.1 — local Home Assistant dashboard */
-const VERSION = "0.4.1";
+/* NIBE Control 0.5.0 — local Home Assistant dashboard */
+import { ncNumber, ncBinary, ncOperating, ncSg, ncEvccMode } from './state.js';
+const VERSION = "0.5.0";
 const PROFILE = {
  outdoor:{r:"30002",e:"sensor.current_outdoor_temperature_bt1_30002",l:"Außen",t:"BT1",u:"°C"},
  room:{e:"climate.vvms320_climate_system_s1",a:"current_temperature",l:"Innen",u:"°C"},
@@ -15,6 +16,7 @@ const PROFILE = {
  compressorHz:{r:"31804",e:"sensor.current_compressor_frequency_eb101_31804",l:"Verdichter Ist",u:"Hz",req:1},
  requestedHz:{r:"31855",e:"sensor.requested_compressor_frequency_eb101_31855",l:"Verdichter Soll",u:"Hz",diag:1},
  compressorStatus:{r:"31485",e:"sensor.compressor_status_eb101_31485",l:"Verdichterstatus"},
+ priority:{r:"31029",e:"sensor.priority_31029",l:"Betriebspriorität",req:1},
  electrical:{r:"32306",e:"sensor.energy_log_current_power_consumption_32306",l:"Elektrische Leistung",u:"kW",req:1},
  outdoorPower:{r:"31807",e:"sensor.power_eb101_ep14_31807",l:"Außeneinheit",u:"kW",diag:1},
  thermal:{r:"30407",e:"sensor.generated_power_heating_eb101_30407",l:"Heizleistung",u:"kW",diag:1},
@@ -25,8 +27,8 @@ const PROFILE = {
  moreHotWater:{r:"31079",e:"sensor.more_hot_water_status_31079",l:"Mehr Warmwasser",req:1},
  diverter:{r:"32197",e:"sensor.diverter_valve_hot_water_qn10_32197",l:"Umschaltventil",diag:1},
  sgMode:{r:"31912",e:"sensor.operating_mode_sg_ready_31912",l:"SG Ready",req:1},
- sgA:{r:"31913",e:"sensor.sg_ready_input_a_31913",l:"SG Eingang A",diag:1},
- sgB:{r:"31914",e:"sensor.sg_ready_input_b_31914",l:"SG Eingang B",diag:1},
+ sgA:{r:"31913",e:"sensor.sg_ready_input_a_31913",l:"SG Eingang A",diag:1,req:1},
+ sgB:{r:"31914",e:"sensor.sg_ready_input_b_31914",l:"SG Eingang B",diag:1,req:1},
  defrost:{r:"31806",e:"sensor.defrosting_eb101_31806",l:"Abtauung",req:1},
  alarm:{r:"31976",e:"sensor.alarm_number_31976",l:"Alarmnummer"},
  climate:{e:"climate.vvms320_climate_system_s1",l:"Heizkreis"},
@@ -49,12 +51,12 @@ function statusLabel(role, raw) {
  if(role==="alarm") return s==="0" ? "Kein Alarm" : `Alarm ${raw}`;
  if(role==="defrost") return yes(s) ? "Abtauung aktiv" : "Keine Abtauung";
  if(role==="compressorStatus") return s==="20" ? "Statuscode 20" : `Statuscode ${raw}`;
- if(role==="sgMode") return ({"0":"Normalbetrieb","1":"Sperre","2":"Normalbetrieb","3":"Überschuss","4":"Max. Überschuss"})[s] || `Modus ${raw}`;
+ if(role==="sgMode") return `Statuscode ${raw}`;
  return String(raw ?? "—");
 }
 
 class NibeControlCard extends HTMLElement {
- setConfig(config){ this.config=config||{}; this.attachShadow({mode:"open"}); }
+ setConfig(config){ this.config=config||{}; if(!this.shadowRoot)this.attachShadow({mode:"open"}); }
  set hass(hass){ const first=!this._hass; this._hass=hass; if(first) this.init(); else this.paintValues(); }
  async init(){
   try {
@@ -76,18 +78,15 @@ class NibeControlCard extends HTMLElement {
  val(role){const s=this.st(role), a=PROFILE[role]?.a; return a ? s?.attributes?.[a] : s?.state;}
  available(role){return valid(this.st(role));}
  unit(role){return this.st(role)?.attributes?.unit_of_measurement || PROFILE[role]?.u || "";}
- value(role,d=1){return this.available(role)?`${fmt(this.val(role),d)}${this.unit(role)?` ${esc(this.unit(role))}`:""}`:"—";}
+ value(role,d=1){const value=this.val(role);return this.available(role)&&ncNumber(value)!=null?`${fmt(value,d)}${this.unit(role)?` ${esc(this.unit(role))}`:""}`:"—";}
  live(role,d=1){return `<span data-role="${role}" data-digits="${d}">${this.value(role,d)}</span>`;}
- operating(){
-  if(this.available("alarm") && String(this.val("alarm"))!=="0") return ["alarm","Störung erkannt"];
-  if(yes(this.val("defrost"))) return ["defrost","Abtauung"];
-  if((Number(this.val("compressorHz"))||0)>0) return ["running","Verdichter läuft"];
-  return ["idle","Bereit"];
- }
+ stateValues(){return Object.fromEntries(['priority','compressorHz','additionalHeat','alarm','defrost','sgA','sgB','sgMode'].map(role=>[role,this.val(role)]));}
+ operation(){return ncOperating(this.stateValues(),this._hass.connected!==false);}
+ operating(){const state=this.operation();return [state.mode,state.label];}
  render(){
   const [mode,label]=this.operating();
-  this.shadowRoot.innerHTML=`<style>${this.styles()}</style><style>${this.responsiveStyles()}</style><main class="app ${mode}">
-   <header><div><div class="eyebrow">NIBE CONTROL · V${VERSION}</div><h1>VVM S320</h1><p class="sub">Wärmepumpe · EB101</p></div><div class="status"><i></i><span>${label}</span></div></header>
+  this.shadowRoot.innerHTML=`<style>${this.styles()}</style><style>${this.responsiveStyles()}</style><style>${this.plantStyles()}</style><main class="app ${mode}">
+   <header><div><div class="eyebrow">NIBE CONTROL · V${VERSION}</div><h1>VVM S320</h1><p class="sub">Wärmepumpe · EB101</p></div><div class="status" role="status"><i></i><span data-operation>${label}</span></div></header>
    ${this.hero()}
    <nav aria-label="Dashboardbereiche"><button class="active" data-tab="overview">Übersicht</button><button data-tab="charts">Verläufe</button><button data-tab="setup">Datencheck</button><button data-tab="diag">Diagnose</button></nav>
    <section id="overview" class="tab active">${this.overview()}</section>
@@ -95,22 +94,25 @@ class NibeControlCard extends HTMLElement {
    <section id="setup" class="tab">${this.setup()}</section>
    <section id="diag" class="tab">${this.diagnostics()}</section>
   </main>`;
-  this.bind();
+  this.bind(); this.paintValues();
  }
  hero(){
-  const active=(Number(this.val("compressorHz"))||0)>0;
   return `<section class="plant" aria-label="Aktueller Anlagenbetrieb">
-   <div class="ambient">${this.live("outdoor")}<small>Außen · BT1</small></div>
-   <div class="machine ${active?"active":""}"><div class="fan" aria-hidden="true"><b></b></div><strong>${this.live("compressorHz",0)}</strong><small>Verdichter</small></div>
-   <div class="pipe hot"><span></span></div><div class="pipe cold"><span></span></div>
-   <div class="hub"><div class="nibe">NIBE</div><small>System</small></div>
-   <div class="branch heat"><b>Heizkreis</b>${this.live("supply")}<small>Vorlauf · BT2</small></div>
-   <div class="branch water"><b>Warmwasser</b>${this.live("hotWaterTop")}<small>Speicher oben · BT7</small></div>
+   <div class="plant-heading"><small>DEINE ANLAGE · LIVE</small><b data-operation>${esc(this.operation().label)}</b></div>
+   <div class="plant-core">
+    <article class="machine"><div class="outdoor-unit"><div class="fan" aria-hidden="true"><b></b></div><i></i><i></i><i></i></div><strong>${this.live('compressorHz',0)}</strong><small>Außeneinheit · EB101</small><span class="outside-value">${this.live('outdoor')} außen</span></article>
+    <div class="plant-link" aria-hidden="true"><div class="pipe hot"><span></span></div><div class="pipe cold"><span></span></div></div>
+    <article class="hub"><div class="indoor-unit"><span>NIBE</span><i></i><i></i></div><strong>VVM S320</strong><small>Inneneinheit</small></article>
+   </div>
+   <div class="destinations">
+    <article class="destination heat" data-destination="heat"><ha-icon icon="mdi:home-thermometer-outline" aria-hidden="true"></ha-icon><div><b>Heizkreis</b><strong>${this.live('supply')}</strong><small>Vorlauf · BT2</small></div><span class="branch-state" data-branch="heat">Bereit</span></article>
+    <article class="destination water" data-destination="water"><ha-icon icon="mdi:water-boiler" aria-hidden="true"></ha-icon><div><b>Warmwasser</b><strong>${this.live('hotWaterTop')}</strong><small>Speicher oben · BT7</small></div><span class="branch-state" data-branch="water">Bereit</span></article>
+   </div><p class="plant-note" data-operation-detail></p>
   </section>`;
  }
  metric(role){const p=PROFILE[role]; return `<article class="metric"><div><small>${esc(p.l)}${p.t?` · ${p.t}`:""}</small><strong>${this.live(role)}</strong></div>${this.available(role)?"":`<em>${this.meta?.[role]?.disabled_by?"deaktiviert":"nicht verfügbar"}</em>`}</article>`;}
  overview(){
-  const sg=this.available("sgMode")?statusLabel("sgMode",this.val("sgMode")):"Nicht verfügbar";
+  const sg=ncSg(this.stateValues()).label;
   const wh=this.st("waterHeater"), ops=wh?.attributes?.operation_list||[];
   const evccPresent=["evccEnabled","evccCharging","evccAction","evccMode"].some(r=>this.st(r));
   const evccEnabled=yes(this.val("evccEnabled")), evccRequest=yes(this.val("evccCharging"));
@@ -119,13 +121,14 @@ class NibeControlCard extends HTMLElement {
    <section class="panel water-panel"><div class="title"><div><small>WARMWASSER</small><h2>${this.live("hotWaterTop")}</h2></div><ha-icon icon="mdi:water-boiler"></ha-icon></div><div class="pair"><span>Ladefühler · BT6 <b>${this.live("hotWaterCharge")}</b></span><span>Betrieb <b>${esc(wh?.state||"—")}</b></span></div>${ops.length?`<label class="mode-control" for="hw-mode">Warmwassermodus<select id="hw-mode">${ops.map(o=>`<option ${o===wh.state?"selected":""}>${esc(o)}</option>`).join("")}</select></label>`:`<p class="hint">Kein schaltbarer Warmwassermodus verfügbar.</p>`}</section>
    <section class="panel energy-board"><div class="energy-head"><div><small>ENERGIE · PV-OPTIMIERUNG</small><h2>${this.live("electrical")}</h2><p>Elektrische Leistung</p></div><ha-icon icon="mdi:solar-power-variant-outline"></ha-icon></div>
     <div class="energy-flow">
-     <article class="energy-node ${evccEnabled?"is-active":""}"><ha-icon icon="mdi:solar-power"></ha-icon><span>PV-Optimierung</span><b data-state="evccEnabled">${evccEnabled?"Aktiv":"Inaktiv"}</b></article>
+     <article class="energy-node ${evccEnabled?"is-active":""}"><ha-icon icon="mdi:solar-power"></ha-icon><span>EVCC-Freigabe</span><b data-state="evccEnabled">${evccEnabled?"Aktiv":"Inaktiv"}</b></article>
      <i aria-hidden="true"></i>
      <article class="energy-node ${evccRequest?"is-active":""}"><ha-icon icon="mdi:heat-pump-outline"></ha-icon><span>EVCC-Anforderung</span><b data-state="evccCharging">${evccRequest?"Aktiv":"Keine"}</b></article>
      <i aria-hidden="true"></i>
-     <article class="energy-node sg"><ha-icon icon="mdi:transmission-tower-import"></ha-icon><span>SG Ready</span><b data-status="sgMode">${esc(sg)}</b></article>
+     <article class="energy-node sg"><ha-icon icon="mdi:transmission-tower-import"></ha-icon><span>SG Ready</span><b data-sg>${esc(sg)}</b></article>
     </div>
     <div class="energy-facts">${evccPresent?`<span>PV-Aktion<b data-raw="evccAction">${esc(this.val("evccAction")||"—")}</b></span><span>Anhebung<b>${this.live("evccActionValue")}</b></span><span>EVCC-Modus<b data-raw="evccMode">${esc(this.val("evccMode")||"—")}</b></span>`:`<span class="wide">EVCC<b>Nicht erkannt</b></span>`}<span>Heizstab<b>${this.live("additionalHeat")}</b></span></div>${this.evccControl()}
+    <div class="sg-contacts"><span>SG A <b data-contact="sgA">—</b></span><span>SG B <b data-contact="sgB">—</b></span></div><p class="energy-explanation" data-energy-explanation></p><p class="hint" data-sg-detail></p>
    </section>
   </div><div class="metric-row">${["supplyTarget","supply","return","hpSupply","degreeMinutes","flow"].map(r=>this.metric(r)).join("")}</div>`;
  }
@@ -145,12 +148,28 @@ class NibeControlCard extends HTMLElement {
   if(!this.shadowRoot?.querySelector("main"))return;
   this.shadowRoot.querySelectorAll("[data-role]").forEach(el=>el.textContent=this.value(el.dataset.role,Number(el.dataset.digits??1)));
   this.shadowRoot.querySelectorAll("[data-status]").forEach(el=>el.textContent=this.available(el.dataset.status)?statusLabel(el.dataset.status,this.val(el.dataset.status)):"Nicht verfügbar");
-  this.shadowRoot.querySelectorAll("[data-state]").forEach(el=>{const role=el.dataset.state,on=yes(this.val(role));el.textContent=role==="evccCharging"?(on?"Aktiv":"Keine"):(on?"Aktiv":"Inaktiv");el.closest(".energy-node")?.classList.toggle("is-active",on);});
-  this.shadowRoot.querySelectorAll("[data-raw]").forEach(el=>el.textContent=String(this.val(el.dataset.raw)||"—"));
+  this.shadowRoot.querySelectorAll("[data-state]").forEach(el=>{const role=el.dataset.state,on=ncBinary(this.val(role));el.textContent=on==null?'Nicht verfügbar':role==="evccCharging"?(on?"Aktiv":"Keine"):(on?"Freigegeben":"Aus");el.closest(".energy-node")?.classList.toggle("is-active",on===true);});
+  this.shadowRoot.querySelectorAll("[data-raw]").forEach(el=>el.textContent=el.dataset.raw==='evccMode'?ncEvccMode(this.val('evccMode')):String(this.val(el.dataset.raw)??"—"));
+  const operation=this.operation(), main=this.shadowRoot.querySelector('main');
+  main.className=`app ${operation.mode}`;
+  this.shadowRoot.querySelectorAll('[data-operation]').forEach(el=>el.textContent=operation.label);
+  this.shadowRoot.querySelector('.machine')?.classList.toggle('active',operation.active && ncNumber(this.val('compressorHz'))>0);
+  this.shadowRoot.querySelectorAll('[data-destination]').forEach(el=>el.classList.toggle('is-active',operation.active && el.dataset.destination===operation.kind));
+  this.shadowRoot.querySelectorAll('[data-branch]').forEach(el=>el.textContent=operation.active && el.dataset.branch===operation.kind?'Aktiv':operation.kind==='unknown' || ['alarm','defrost','offline','unknown'].includes(operation.mode)?'Nicht bestätigt':'Bereit');
+  const note=this.shadowRoot.querySelector('[data-operation-detail]');
+  if(note)note.textContent=operation.kind==='unknown'?'Für die sichere Unterscheidung von Heizung und Warmwasser wird die Betriebspriorität 31029 benötigt.':'Betriebsart aus NIBE-Priorität 31029 · Aktivität aus Verdichter / Zusatzheizung.';
+  const sg=ncSg(this.stateValues());
+  this.shadowRoot.querySelectorAll('[data-sg]').forEach(el=>el.textContent=sg.label);
+  this.shadowRoot.querySelectorAll('[data-sg-detail]').forEach(el=>el.textContent=sg.detail);
+  this.shadowRoot.querySelector('.energy-node.sg')?.classList.toggle('is-active',sg.tone==='boost');
+  this.shadowRoot.querySelectorAll('[data-contact]').forEach(el=>{const value=ncBinary(this.val(el.dataset.contact));el.textContent=value==null?'Nicht verfügbar':value?'Geschlossen':'Offen';});
+  const request=ncBinary(this.val('evccCharging')), enabled=ncBinary(this.val('evccEnabled'));
+  const explanation=this.shadowRoot.querySelector('[data-energy-explanation]');
+  if(explanation)explanation.textContent=enabled==null?'EVCC ist nicht verfügbar. NIBE und SG Ready werden unabhängig davon angezeigt.':request===true?`EVCC fordert Wärme an. NIBE: ${operation.label}.`:request==null?'EVCC-Anforderung ist nicht verfügbar.':'Keine EVCC-Anforderung. NIBE regelt Heizung und Warmwasser selbstständig.';
  }
  async loadHistory(){
   const sets={heating:[["outdoor","#78aee8"],["supplyTarget","#e9b15b"],["supply","#ee765f"],["return","#8fc58a"]],power:[["compressorHz","#49b6a1"],["electrical","#e9b15b"]],water:[["hotWaterCharge","#55a8d8"],["hotWaterTop","#ee765f"]]};
-  const roles=[...new Set(Object.values(sets).flat().map(x=>x[0]).filter(r=>this.mapping[r]&&this.st(r)))]; if(!roles.length)return;
+  const roles=[...new Set(Object.values(sets).flat().map(x=>x[0]).filter(r=>this.mapping[r]&&this.st(r)))]; if(!roles.length){this.shadowRoot.querySelectorAll('.plot').forEach(p=>p.innerHTML='<div class="empty">Keine Historien-Entitäten verfügbar</div>');return;}
   const end=new Date(), start=new Date(end-86400000);
   try {const result=await this._hass.callWS({type:"history/history_during_period",start_time:start.toISOString(),end_time:end.toISOString(),entity_ids:roles.map(r=>this.mapping[r]),minimal_response:true,no_attributes:true,significant_changes_only:false});
    const history=this.normalizeHistory(result);
@@ -164,6 +183,49 @@ class NibeControlCard extends HTMLElement {
   const lines=found.map(([r,c,pts])=>{const usable=pts.filter(p=>Number.isFinite(pointValue(p)));const sample=usable.filter((_,i)=>i%Math.max(1,Math.ceil(usable.length/120))===0); const d=sample.map((p,i)=>`${i?"L":"M"}${(i/(sample.length-1||1)*100).toFixed(2)},${(44-(pointValue(p)-min)/span*38).toFixed(2)}`).join(" ");return `<path d="${d}" stroke="${c}"/><span style="--c:${c}">${esc(PROFILE[r].l)}</span>`}).join("");
   host.innerHTML=`<svg viewBox="0 0 100 48" preserveAspectRatio="none"><g class="gridlines"><path d="M0 6H100M0 25H100M0 44H100"/></g>${lines}</svg><div class="axis"><span>vor 24 h</span><span>jetzt</span></div>`;
  }
+ plantStyles(){return `
+ .plant{display:block;padding:18px 20px;min-height:0;background:var(--card-background-color)}
+ .plant-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+ .plant-heading small{font-size:.66rem;letter-spacing:.12em;font-weight:750;color:var(--secondary-text-color)}
+ .plant-heading b{font-size:.83rem;font-weight:650;text-align:right}
+ .plant-core{display:grid;grid-template-columns:104px minmax(48px,1fr) 72px;align-items:start;max-width:480px;margin:0 auto 22px;padding:0}
+ .plant .machine{display:flex;width:104px;grid-column:auto;grid-row:auto;background:none;border:0;border-radius:0;gap:4px;text-align:center}
+ .plant .machine strong{font-size:1.05rem;font-variant-numeric:tabular-nums}
+ .plant .machine small,.plant .hub small{font-size:.66rem;white-space:nowrap}
+ .outdoor-unit{height:88px;width:104px;border:1.5px solid var(--nc-line);border-radius:13px;background:var(--nc-surface);position:relative;display:flex;align-items:center;padding:10px;gap:4px}
+ .outdoor-unit .fan{width:58px;height:58px;flex-shrink:0;margin:0;border-width:1.5px}
+ .outdoor-unit>i{display:block;width:2px;height:42px;background:var(--nc-line);border-radius:2px}
+ .outside-value{font-size:.68rem;color:var(--secondary-text-color);margin-top:3px}
+ .plant .hub{display:flex;flex-direction:column;align-items:center;gap:4px;grid-column:auto;grid-row:auto;width:72px;justify-self:auto;align-self:auto;text-align:center}
+ .plant .hub strong{font-size:.82rem;white-space:nowrap}
+ .indoor-unit{height:88px;width:72px;border:1.5px solid var(--nc-teal);border-radius:12px;background:var(--nc-surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+ .indoor-unit span{color:var(--nc-teal);font-size:.77rem;font-weight:800;letter-spacing:.09em}
+ .indoor-unit i{display:block;width:32px;height:2px;background:var(--nc-line)}
+ .plant-link{position:relative;height:88px;z-index:0}
+ .plant .pipe{left:0;right:0;top:36px;height:3px;opacity:.65;border-radius:0}
+ .plant .pipe.cold{top:52px}
+ .destinations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:760px;margin:auto}
+ .destination{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 14px;border:1px solid var(--nc-line);border-radius:14px;background:var(--nc-surface);position:relative}
+ .destination ha-icon{--mdc-icon-size:28px;color:var(--secondary-text-color);flex-shrink:0}
+ .destination>div{min-width:0;flex:1}.destination b,.destination strong,.destination small{display:block}
+ .destination b{font-size:.76rem}.destination strong{font-size:1.22rem;font-variant-numeric:tabular-nums;margin:3px 0}.destination small{font-size:.64rem;color:var(--secondary-text-color)}
+ .branch-state{font-size:.65rem;font-weight:700;color:var(--secondary-text-color);max-width:80px}
+ .destination.is-active{border-color:var(--nc-teal);background:color-mix(in srgb,var(--nc-teal) 8%,var(--card-background-color))}
+ .destination.heat.is-active ha-icon,.destination.heat.is-active .branch-state{color:var(--nc-warm)}
+ .destination.water.is-active ha-icon,.destination.water.is-active .branch-state{color:var(--nc-blue)}
+ .plant-note{font-size:.64rem;color:var(--secondary-text-color);text-align:center;line-height:1.5;margin-top:12px;min-height:20px}
+ .energy-node b,.energy-facts b{white-space:normal;overflow:visible;overflow-wrap:anywhere}
+ .sg-contacts{display:flex;gap:16px;margin-top:14px;padding-top:10px;border-top:1px solid var(--nc-line);font-size:.65rem;color:var(--secondary-text-color)}
+ .sg-contacts b{font-weight:600;color:var(--primary-text-color);margin-left:4px}
+ .energy-explanation{font-size:.76rem;line-height:1.5;margin-top:12px;padding-left:10px;border-left:2px solid var(--nc-solar)}
+ .status i{box-shadow:none}.idle .status i{background:var(--secondary-text-color)}.offline .status i,.unknown .status i{background:var(--warning-color,#d89521)}.defrost .status i{background:var(--nc-blue)}
+ nav button:hover{background:var(--nc-surface-strong)}nav button:active{opacity:.75}
+ *{scrollbar-color:var(--scrollbar-thumb-color,#7b858b) transparent;scrollbar-width:thin}
+ @media(max-width:820px){.plant{padding:16px}.plant-heading{margin-bottom:16px}.plant-core{max-width:400px}.destination{padding:11px}}
+ @media(max-width:430px){.plant{padding:13px 11px}.plant-heading{align-items:flex-start}.plant-heading small{max-width:110px;font-size:.58rem}.plant-heading b{font-size:.72rem;max-width:180px}.plant-core{margin-bottom:16px}.destinations{gap:6px}.destination{gap:6px;padding:10px 8px;flex-wrap:wrap}.destination ha-icon{--mdc-icon-size:22px}.destination strong{font-size:1.05rem}.branch-state{flex-basis:100%;max-width:none;padding-left:28px}.status span{display:block;font-size:.64rem;max-width:100px}.status{padding:7px;gap:6px}.plant-note{text-align:left;font-size:.6rem}}
+ @media(prefers-reduced-motion:reduce){.plant *{animation:none!important}}
+ @media(forced-colors:active){.destination.is-active{outline:2px solid Highlight}*{scrollbar-color:auto}}
+ `;}
  responsiveStyles(){return `
  :host{--nc-solar:#c89538;--nc-success:#4fa57b;--nc-surface:color-mix(in srgb,var(--card-background-color) 96%,var(--primary-color) 4%);--nc-surface-strong:color-mix(in srgb,var(--card-background-color) 90%,var(--primary-color) 10%);--nc-focus:var(--primary-color,#03a9f4)}
  .app{padding-block-start:clamp(12px,2vw,22px)}
