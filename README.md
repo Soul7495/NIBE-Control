@@ -1,4 +1,9 @@
-# NIBE Control 0.4.1
+# NIBE Control 0.5.0
+
+## Neu in 0.5.0
+Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
+
+Für die Unterscheidung von Heizbetrieb und Warmwasserbereitung: `sensor.priority_31029` aktivieren. Codes 10/20/30/40/60 stammen aus dem VVM-S320-Profil der bestehenden NIBE-Bibliothek. EVCC-Anforderung wird nicht als tatsächlicher Heizbetrieb interpretiert. SG Ready wird aus den verfügbaren Eingängen A/B gemäß NIBE-Handbuch bestimmt; unbekannte numerische SG-Modi bleiben Rohcodes.
 
 Dynamisches, lokales Home-Assistant-Dashboard für NIBE-Wärmepumpen der S-Serie. Das VVM-S320-Profil wurde gegen den Entity-Export vom 04.10.2026 mit 819 Entitäten geprüft.
 
