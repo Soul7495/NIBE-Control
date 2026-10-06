@@ -15,6 +15,7 @@ export const PROFILE = {
     compressorHz: { register: "31804", entity: "sensor.current_compressor_frequency_eb101_31804", label: "Verdichter", tag: "Ist", unit: "Hz", group: "recommended" },
     requestedHz: { register: "31855", entity: "sensor.requested_compressor_frequency_eb101_31855", label: "Verdichter", tag: "Soll", unit: "Hz", group: "diagnostic" },
     compressorStatus: { register: "31485", entity: "sensor.compressor_status_eb101_31485", label: "Verdichterstatus", group: "core" },
+    priority: { register: "31029", entity: "sensor.priority_31029", label: "Betriebspriorität", group: "recommended" },
     electrical: { register: "32306", entity: "sensor.energy_log_current_power_consumption_32306", label: "Elektrische Leistung", unit: "kW", group: "recommended" },
     outdoorPower: { register: "31807", entity: "sensor.power_eb101_ep14_31807", label: "Außeneinheit", unit: "kW", group: "diagnostic" },
     thermal: { register: "30407", entity: "sensor.generated_power_heating_eb101_30407", label: "Heizleistung", unit: "kW", group: "diagnostic" },
