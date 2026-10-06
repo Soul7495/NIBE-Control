@@ -16,7 +16,7 @@ Eine ruhige technische Gebäudeautomation mit der Verständlichkeit einer guten 
 - Vier klare Modi: Übersicht, Verläufe, Datencheck, Diagnose.
 
 ## Motion
-Nur der aktive Verdichter und ein aktiver Wärmefluss bewegen sich. `prefers-reduced-motion` deaktiviert alle Animationen.
+Nur der innere, exakt zentrierte Verdichterrotor und ein aktiver Wärmefluss bewegen sich. Rahmen, Messwert und Anlagenraster bleiben auch im Betrieb vollständig ruhig. `prefers-reduced-motion` deaktiviert alle Animationen.
 
 ## Safety
 Bedienung ist kein Nebenprodukt schreibbarer Entities. Der lokale Raum-Sollwert bleibt read-only; nur von `water_heater` tatsächlich angebotene Modi und der vorhandene EVCC-Modus sind freigegeben.
