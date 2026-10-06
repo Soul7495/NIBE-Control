@@ -15,6 +15,9 @@ Eine ruhige technische Gebäudeautomation mit der Verständlichkeit einer guten 
 - Smartphone: einspaltige Hauptkarten, Messwerte im 2er-Raster, vereinfachtes Anlagenbild und dreiteilige EVCC-/SG-Statuskette.
 - Vier klare Modi: Übersicht, Verläufe, Datencheck, Diagnose.
 
+## Anlagenbild 0.5
+Die Signatur ist ein erkennbares Gerätepaar: Außenmodul mit festem Ventilatorrahmen und NIBE-Innenmodul. Beide Gehäuse sind 88 px hoch. Leitungen liegen in einem eigenen Grid-Segment an Y=36/52 px und enden exakt an den Gehäusekanten; keine viewportabhängigen Prozentpositionen. Heizkreis und Speicher stehen immer darunter, auch mobil. Aktivität wird durch Text und zurückhaltende Umrandung sichtbar, niemals nur durch Farbe.
+
 ## Motion
 Nur der innere, exakt zentrierte Verdichterrotor und ein aktiver Wärmefluss bewegen sich. Rahmen, Messwert und Anlagenraster bleiben auch im Betrieb vollständig ruhig. `prefers-reduced-motion` deaktiviert alle Animationen.
 
@@ -26,3 +29,4 @@ Das Energie-/PV-Board trennt vier Aussagen: elektrische Wärmepumpenleistung, EV
 
 ## Runtime mapping
 Die normativen Farben werden als `--nc-*` Variablen im Root der Komponente definiert. Oberflächen, Text, Fehler- und Fokusfarben erben aus dem aktiven Home-Assistant-Theme.
+Runtime-CSS bleibt kanonisch (Token-Modell B). `plantStyles()` konsumiert die bestehenden semantischen Variablen, ohne neue Farbpalette oder externe Schriftdateien. Geräteschrift erbt die HA-Systemschrift, Messwerte verwenden tabellarische Ziffern.
