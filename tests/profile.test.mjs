@@ -20,7 +20,7 @@ test("responsive energy board exposes EVCC and SG Ready without invented PV valu
   assert.match(source,/class="panel energy-board"/);
   assert.match(source,/data-state="evccEnabled"/);
   assert.match(source,/data-state="evccCharging"/);
-  assert.match(source,/data-status="sgMode"/);
+  assert.match(source,/data-sg/);
   assert.match(source,/@media\(max-width:1100px\)/);
   assert.match(source,/@media\(min-width:700px\) and \(max-height:760px\)/);
 });
