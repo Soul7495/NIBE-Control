@@ -17,5 +17,10 @@
 - Deaktivierte empfohlene Entities erscheinen im Datencheck mit konkreter Anleitung.
 - Statuscodes ohne belastbare Dokumentation werden als Rohcode bezeichnet.
 - EVCC/PV sind optional und blockieren die NIBE-Ansicht nicht.
+- Betriebspriorität 31029: 10=Bereit, 20=Warmwasser, 30=Heizung, 40=Pool, 60=Kühlung. Quelle: `yozik04/nibe/nibe/data/vvms320_vvms325.json` und `extensions.json` (M12676EN-1 Common Parameters).
+- Aktive Wärmeerzeugung benötigt zusätzlich Verdichterfrequenz >0 oder Zusatzheizleistung >0. Unbekannte Daten bestätigen keinen aktiven Zweig. Alarm, Trennung und Abtauung haben Vorrang.
+- SG-Eingänge: A/B offen=Normal, A geschlossen/B offen=Sperre, A offen/B geschlossen=Niedrigpreis, beide geschlossen=Überkapazität. Quelle: NIBE VVM S320 Installateurhandbuch 531158-2, AUX/SG Ready, https://www.nibe.eu/assets/documents/27032/531158-2.pdf . Unbekannte numerische SG-Modi werden nicht gemappt.
+- EVCC-Anforderung ist eine Anforderung, kein Nachweis laufender Wärmeerzeugung oder vorhandenen PV-Überschusses.
+- `paintValues()` aktualisiert Texte, Zustand und aktive Zweige ohne Neurendern von Tabs, Diagrammen oder Bedienfeldern.
 - Das Energie-/PV-Board zeigt keine geschätzte PV-Leistung und leitet keinen Überschuss aus fachlich unbekannten Sensoren ab.
 - Breakpoints: Desktop über 1100 px, Tablet/Wall Display bis 1100 px, Smartphone bis 760 px, kompakte Querformatdarstellung bei maximal 760 px Höhe.
