@@ -24,3 +24,13 @@ test("responsive energy board exposes EVCC and SG Ready without invented PV valu
   assert.match(source,/@media\(max-width:1100px\)/);
   assert.match(source,/@media\(min-width:700px\) and \(max-height:760px\)/);
 });
+test("compressor animation and mobile plant remain centered",()=>{
+  const source=readFileSync(new URL("../src/nibe-control.js",import.meta.url),"utf8");
+  assert.match(source,/class="fan" aria-hidden="true"><b><\/b><\/div>/);
+  assert.match(source,/\.fan:after\{content:"";position:absolute;left:50%;top:50%/);
+  assert.match(source,/\.machine\.active \.fan b\{animation:spin 3\.6s linear infinite\}/);
+  assert.doesNotMatch(source,/\.machine\.active \.fan\{animation:/);
+  assert.match(source,/@media\(max-width:820px\)/);
+  assert.match(source,/--machine-col:104px/);
+  assert.match(source,/@keyframes flow\{from\{left:-18px\}to\{left:100%\}\}/);
+});
