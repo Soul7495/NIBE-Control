@@ -1,5 +1,5 @@
-/* NIBE Control 0.4.0 — local Home Assistant dashboard */
-const VERSION = "0.4.0";
+/* NIBE Control 0.4.1 — local Home Assistant dashboard */
+const VERSION = "0.4.1";
 const PROFILE = {
  outdoor:{r:"30002",e:"sensor.current_outdoor_temperature_bt1_30002",l:"Außen",t:"BT1",u:"°C"},
  room:{e:"climate.vvms320_climate_system_s1",a:"current_temperature",l:"Innen",u:"°C"},
@@ -99,9 +99,9 @@ class NibeControlCard extends HTMLElement {
  }
  hero(){
   const active=(Number(this.val("compressorHz"))||0)>0;
-  return `<section class="plant">
+  return `<section class="plant" aria-label="Aktueller Anlagenbetrieb">
    <div class="ambient">${this.live("outdoor")}<small>Außen · BT1</small></div>
-   <div class="machine ${active?"active":""}"><div class="fan"><b></b></div><strong>${this.live("compressorHz",0)}</strong><small>Verdichter</small></div>
+   <div class="machine ${active?"active":""}"><div class="fan" aria-hidden="true"><b></b></div><strong>${this.live("compressorHz",0)}</strong><small>Verdichter</small></div>
    <div class="pipe hot"><span></span></div><div class="pipe cold"><span></span></div>
    <div class="hub"><div class="nibe">NIBE</div><small>System</small></div>
    <div class="branch heat"><b>Heizkreis</b>${this.live("supply")}<small>Vorlauf · BT2</small></div>
