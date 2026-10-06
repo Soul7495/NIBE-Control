@@ -1,4 +1,13 @@
 # Changelog
+## 0.5.0
+- neues Geräteschema mit erkennbarer Außen- und Inneneinheit und festen Leitungsanschlüssen
+- Heizkreis und Warmwasser auch auf Smartphone und Wall Display dauerhaft sichtbar
+- Heiz-/Warmwasserbetrieb anhand der verifizierten NIBE-Priorität 31029
+- Live-Wechsel von Betriebsanzeige, aktiven Zweigen und Animation ohne DOM-Neuaufbau
+- EVCC-Freigabe, Anforderung und tatsächlicher NIBE-Betrieb eindeutig getrennt
+- SG-Ready-Eingänge mit verständlicher Kontaktanzeige und dokumentierter Auswertung
+- fehlende Daten erscheinen nicht mehr als ausgeschaltet oder 0 °C
+
 ## 0.4.1
 - Verdichteranimation im dynamischen Anlagenschema exakt zentriert
 - nur der innere Rotor dreht; Rahmen, Werte und Anlagenlayout bleiben ruhig stehen
