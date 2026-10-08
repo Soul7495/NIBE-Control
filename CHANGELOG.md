@@ -53,3 +53,10 @@
 - lokale 24-h-SVG-Charts
 - Raum-Sollwert mit expliziter Service-Allowlist
 - Warmwassermodus nur bei tatsächlich angebotenen Modi
+# 0.6.0
+
+- ERS S40-400 mit getrennten dynamischen Luftwegen und Livewerten für Abluft GQ2 / Zuluft GQ3.
+- Filterwartung über ausdrücklich zugeordneten HA-Datumshelfer, Kalenderintervall und zweistufige Bestätigung.
+- Kein ungeprüftes Schreiben von NIBE-Lüfter-/Filterregistern; Automatik-/Stufenbedienung bleibt bis zum Nachweis gesperrt.
+- Zusätzliche Tests für Datum, Schaltjahr, Zeitzone und Bestätigung.
+
