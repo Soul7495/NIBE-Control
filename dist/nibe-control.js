@@ -1,4 +1,4 @@
-/* NIBE Control 0.5.0 — local Home Assistant dashboard */
+/* NIBE Control 0.6.0 — local Home Assistant dashboard */
 // Register 31029: yozik04/nibe, vvms320_vvms325.json / extensions.json.
 // SG contacts: NIBE VVM S320 installer manual 531158-2, AUX / SG Ready.
 const NC_INVALID = new Set(['unknown','unavailable','none','null','']);
@@ -50,7 +50,23 @@ function ncSg(values) {
 function ncEvccMode(raw) {
   return ({off:'Aus',pv:'PV-Überschuss',minpv:'Min. + PV',now:'Sofort'})[String(raw ?? '').toLowerCase()] || (NC_INVALID.has(String(raw ?? '').toLowerCase())?'Nicht verfügbar':String(raw));
 }
-const VERSION = "0.5.0";
+// Calendar dates are owned by HA's timezone, independent of the display device.
+function ncToday(timeZone='Europe/Berlin', now=new Date()) {
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
+ const get=k=>parts.find(p=>p.type===k).value;
+ return `${get('year')}-${get('month')}-${get('day')}`;
+}
+function ncFilterDate(date, months, today) {
+ const parse=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s)))return null;const d=new Date(`${s}T12:00:00Z`);return Number.isFinite(+d)&&d.toISOString().slice(0,10)===s?d:null;};
+ const last=parse(date), current=parse(today), n=ncNumber(months);
+ if(!last||!current||last>current)return {label:'Wechseldatum fehlt oder ist ungültig',due:null,days:null};
+ if(n==null||!Number.isInteger(n)||n<1||n>24)return {label:'Filterintervall nicht eingerichtet',due:null,days:null};
+ const day=last.getUTCDate();last.setUTCDate(1);last.setUTCMonth(last.getUTCMonth()+n);
+ const end=new Date(Date.UTC(last.getUTCFullYear(),last.getUTCMonth()+1,0)).getUTCDate();last.setUTCDate(Math.min(day,end));
+ const days=Math.round((last-current)/86400000);
+ return {due:last.toISOString().slice(0,10),days,label:days<0?`${-days} Tage überfällig`:days===0?'Heute fällig':`Noch ${days} Tage`};
+}
+const VERSION = "0.6.0";
 const PROFILE = {
  outdoor:{r:"30002",e:"sensor.current_outdoor_temperature_bt1_30002",l:"Außen",t:"BT1",u:"°C"},
  room:{e:"climate.vvms320_climate_system_s1",a:"current_temperature",l:"Innen",u:"°C"},
@@ -87,7 +103,10 @@ const PROFILE = {
  evccCharging:{e:"binary_sensor.evcc_nibe_charging",l:"EVCC-Anforderung",optional:1},
  evccAction:{e:"sensor.evcc_nibe_pv_action",l:"PV-Aktion",optional:1},
  evccActionValue:{e:"sensor.evcc_nibe_pv_action_value",l:"Anhebung",optional:1},
- evccMode:{e:"select.evcc_nibe_mode",l:"EVCC-Modus",optional:1}
+ evccMode:{e:"select.evcc_nibe_mode",l:"EVCC-Modus",optional:1},
+ ventilationExtract:{r:"30136",e:"sensor.fan_speed_az30_gq2_30136",l:"Abluftventilator",t:"GQ2",u:"%",req:1},
+ ventilationSupply:{r:"30137",e:"sensor.fan_speed_az30_gq3_30137",l:"Zuluftventilator",t:"GQ3",u:"%",req:1},
+ ventilationMode:{r:"31038",e:"sensor.fan_mode_1_31038",l:"Lüftermodus (Rohwert)",diag:1}
 };
 const INVALID = new Set(["unknown","unavailable","none","null",""]);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -139,7 +158,7 @@ class NibeControlCard extends HTMLElement {
    <header><div><div class="eyebrow">NIBE CONTROL · V${VERSION}</div><h1>VVM S320</h1><p class="sub">Wärmepumpe · EB101</p></div><div class="status" role="status"><i></i><span data-operation>${label}</span></div></header>
    ${this.hero()}
    <nav aria-label="Dashboardbereiche"><button class="active" data-tab="overview">Übersicht</button><button data-tab="charts">Verläufe</button><button data-tab="setup">Datencheck</button><button data-tab="diag">Diagnose</button></nav>
-   <section id="overview" class="tab active">${this.overview()}</section>
+   <section id="overview" class="tab active">${this.overview()}${this.ventilation()}</section>
    <section id="charts" class="tab">${this.charts()}</section>
    <section id="setup" class="tab">${this.setup()}</section>
    <section id="diag" class="tab">${this.diagnostics()}</section>
@@ -189,13 +208,61 @@ class NibeControlCard extends HTMLElement {
   return `<section class="panel setup"><div class="title"><div><small>ENTITY DISCOVERY</small><h2>Datencheck</h2></div><span class="score">${Object.keys(PROFILE).filter(r=>this.available(r)).length}/${Object.keys(PROFILE).length}</span></div><p>Für das vollständige Dashboard müssen nur die unten aufgeführten empfohlenen Entitäten aktiviert werden. NIBE Control aktiviert nichts selbst.</p><ul>${rows}</ul><aside><b>So aktivierst du einen Wert:</b> Einstellungen → Geräte & Dienste → NIBE Heat Pump → Gerät → Entitäten. Dort „deaktivierte Entitäten anzeigen“ und die gewünschte Entity öffnen.</aside></section>`;
  }
  diagnostics(){return `<section class="panel"><div class="title"><div><small>READ ONLY</small><h2>Technische Diagnose</h2></div><ha-icon icon="mdi:stethoscope"></ha-icon></div><div class="diag-grid">${Object.entries(PROFILE).filter(([,p])=>p.diag).map(([r])=>this.metric(r)).join("")}</div><p class="hint">Unbekannte Statuscodes werden bewusst nicht interpretiert. GP1 bleibt wegen der Register 31103/31637 bis zum Livevergleich ungemappt.</p></section>`;}
+ ventilation(){
+  return `<section class="panel ventilation-panel" aria-label="Lüftung ERS S40-400"><div class="vent-heading"><div><small>LÜFTUNG</small><h3>ERS S40-400</h3></div><span data-vent-operation></span></div>
+   <div class="vent-flow" aria-label="Luftwege, schematisch"><div class="vent-lane" data-vent-lane="ventilationSupply"><span>Außenluft → Zuluft</span><i aria-hidden="true"></i><b>${this.live('ventilationSupply',0)}</b></div><div class="vent-exchanger"><ha-icon icon="mdi:air-filter" aria-hidden="true"></ha-icon><b>Rotationswärmetauscher</b><small>Wärmerückgewinnung: Status nicht verfügbar</small></div><div class="vent-lane" data-vent-lane="ventilationExtract"><span>Abluft → Fortluft</span><i aria-hidden="true"></i><b>${this.live('ventilationExtract',0)}</b></div></div>
+   <p class="hint">Die Luftströme bewegen sich bei gemeldeter Ventilatoraktivität. Lufttemperaturen und Rotorbetrieb werden noch nicht geliefert.</p>
+   <div class="vent-maintenance"><div><h3>Filterwartung</h3><p data-filter-last></p><p data-filter-due></p><b data-filter-status></b></div><button type="button" id="filter-change">Filter gewechselt</button></div>
+   <p class="hint" data-filter-help></p><p class="hint" role="status" aria-live="polite" data-maintenance-feedback></p>
+   <p class="hint">Lüfterstufe und Automatik sind über die vorhandenen Entitäten noch nicht sicher bedienbar. Die eingestellten Stufenprozente bleiben unverändert.</p>
+   <dialog id="maintenance-confirm" aria-labelledby="maintenance-title" aria-describedby="maintenance-description"><h3 id="maintenance-title">Filterwechsel bestätigen?</h3><p id="maintenance-description"></p><p role="alert" data-maintenance-error></p><div class="vent-actions"><button type="button" id="maintenance-cancel" autofocus>Abbrechen</button><button type="button" id="maintenance-save">Ja, Filterwechsel speichern</button></div></dialog>
+  </section><style>
+   .ventilation-panel{margin-top:12px}.vent-heading,.vent-maintenance{display:flex;justify-content:space-between;align-items:center;gap:16px}.vent-heading small{color:var(--secondary-text-color);font-size:.68rem;letter-spacing:.15em}.vent-heading h3{margin-top:5px}.vent-heading>span{font-size:.78rem;color:var(--secondary-text-color)}
+   .vent-flow{display:grid;grid-template-columns:1fr minmax(140px,1fr) 1fr;gap:14px;align-items:center;margin:20px 0}.vent-lane{min-width:0;font-size:.8rem}.vent-lane span,.vent-lane b{display:block}.vent-lane b{font-size:1.2rem;font-variant-numeric:tabular-nums}.vent-lane i{display:block;position:relative;height:3px;background:var(--nc-blue);margin:12px 0;overflow:hidden}.vent-lane:last-child i{background:var(--nc-warm)}.vent-lane.is-active i:after{content:'';position:absolute;width:20px;height:3px;background:var(--primary-text-color);animation:flow 4s linear infinite}.vent-exchanger{display:flex;align-items:center;flex-direction:column;text-align:center;border:1px solid var(--nc-line);border-radius:14px;padding:14px;gap:6px}.vent-exchanger ha-icon{color:var(--nc-teal);--mdc-icon-size:36px}.vent-exchanger b{font-size:.78rem}.vent-exchanger small{color:var(--secondary-text-color);font-size:.7rem}
+   .vent-maintenance{border-top:1px solid var(--nc-line);padding-top:16px}.vent-maintenance p{margin:5px 0;font-size:.8rem;color:var(--secondary-text-color)}.vent-maintenance b{font-size:.85rem}
+   .ventilation-panel button{min-height:44px;border:1px solid var(--nc-line);border-radius:10px;padding:10px 14px;background:var(--card-background-color);color:var(--primary-text-color);cursor:pointer}.ventilation-panel button:hover:enabled{background:var(--nc-card)}.ventilation-panel button:active:enabled{transform:translateY(1px)}.ventilation-panel button:disabled{opacity:.5;cursor:default}.ventilation-panel dialog{max-width:440px;width:calc(100% - 32px);max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--nc-line);border-radius:18px;padding:22px;background:var(--card-background-color);color:var(--primary-text-color)}.ventilation-panel dialog::backdrop{background:rgba(0,0,0,.5)}.ventilation-panel dialog p{margin-top:14px;line-height:1.5;font-size:.85rem}.vent-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}[data-maintenance-error]{color:var(--error-color)}
+   @media(max-width:600px){.vent-flow{grid-template-columns:1fr;gap:10px}.vent-exchanger{flex-direction:row;flex-wrap:wrap;justify-content:center}.vent-maintenance{align-items:flex-start;flex-direction:column}.vent-heading{align-items:flex-start;flex-direction:column;gap:6px}}
+  </style>`;
+ }
+ filterHelper(){const id=this.config?.ventilation?.filter_date_entity;return typeof id==='string'&&id.startsWith('input_datetime.')?id:null;}
+ filterToday(){return ncToday(this._hass.config?.time_zone||'Europe/Berlin');}
+ paintVentilation(){
+  const q=s=>this.shadowRoot.querySelector(s), config=this.config?.ventilation||{}, helper=this.filterHelper(), entity=helper?this._hass.states[helper]:null;
+  let active=false,known=false;
+  this.shadowRoot.querySelectorAll('[data-vent-lane]').forEach(el=>{const n=this._hass.connected===false?null:ncNumber(this.val(el.dataset.ventLane));known=known||n!=null;active=active||n>0;el.classList.toggle('is-active',n!=null&&n>0);});
+  const status=q('[data-vent-operation]');if(status)status.textContent=!known?'Lüfterwerte nicht verfügbar':active?'Lüftung aktiv':'Ventilatoren stehen';
+  const writable=valid(entity)&&entity.attributes?.has_date===true&&this._hass.connected!==false;
+  const date=entity?.state?.slice(0,10),interval=config.filter_interval_months, maintenance=ncFilterDate(date,interval,this.filterToday());
+  const format=d=>d?new Intl.DateTimeFormat('de-DE',{timeZone:'UTC'}).format(new Date(`${d}T12:00:00Z`)):'Nicht bekannt';
+  if(q('[data-filter-last]'))q('[data-filter-last]').textContent=`Letzter Wechsel: ${date&&ncFilterDate(date,1,this.filterToday()).due?format(date):'Nicht bekannt'}`;
+  if(q('[data-filter-due]'))q('[data-filter-due]').textContent=`Nächster Termin: ${format(maintenance.due)}`;
+  if(q('[data-filter-status]'))q('[data-filter-status]').textContent=maintenance.label;
+  if(q('#filter-change'))q('#filter-change').disabled=!writable;
+  if(q('[data-filter-help]'))q('[data-filter-help]').textContent=!writable?'Für das Wechseldatum einen verfügbaren HA-Datumshelfer zuordnen.':`Intervall: ${ncNumber(interval)||'nicht eingerichtet'} Monate. Das Datum bleibt in Home Assistant gespeichert.`;
+ }
+ bindMaintenance(){
+  const q=s=>this.shadowRoot.querySelector(s),dialog=q('#maintenance-confirm'),trigger=q('#filter-change');if(!dialog||!trigger)return;
+  trigger.onclick=()=>{this.pendingFilterDate=this.filterToday();q('#maintenance-description').textContent=`Das letzte Filterwechseldatum wird auf ${this.pendingFilterDate.split('-').reverse().join('.')} gesetzt. Nur bestätigen, wenn die Filter tatsächlich gewechselt wurden. Eine NIBE-Filtermeldung wird dadurch nicht quittiert.`;q('[data-maintenance-error]').textContent='';dialog.showModal();q('#maintenance-cancel').focus();};
+  q('#maintenance-cancel').onclick=()=>dialog.close();dialog.onclose=()=>{this.pendingFilterDate=null;trigger.focus();};
+  q('#maintenance-save').onclick=async()=>{
+   const save=q('#maintenance-save');if(save.disabled||!this.pendingFilterDate)return;
+   const helper=this.filterHelper(),s=this._hass.states[helper];
+   if(!helper||!valid(s)||s.attributes?.has_date!==true||this._hass.connected===false){q('[data-maintenance-error]').textContent='Datumshelfer ist nicht verfügbar. Es wurde nichts gespeichert.';return;}
+   save.disabled=true;dialog.oncancel=e=>e.preventDefault();q('#maintenance-cancel').disabled=true;
+   try{await this._hass.callService('input_datetime','set_datetime',{entity_id:helper,date:this.pendingFilterDate});dialog.close();q('[data-maintenance-feedback]').textContent='Filterwechseldatum an Home Assistant gesendet. Die Anzeige wartet auf die Rückmeldung.';}
+   catch(e){q('[data-maintenance-error]').textContent='Filterwechseldatum konnte nicht gespeichert werden. Bitte erneut versuchen.';}
+   finally{save.disabled=false;q('#maintenance-cancel').disabled=false;dialog.oncancel=null;}
+  };
+ }
  bind(){
+  this.bindMaintenance();
   this.shadowRoot.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{this.shadowRoot.querySelectorAll("nav button,.tab").forEach(x=>x.classList.remove("active")); b.classList.add("active"); this.shadowRoot.getElementById(b.dataset.tab).classList.add("active");});
   const select=this.shadowRoot.getElementById("hw-mode"); if(select) select.onchange=e=>this._hass.callService("water_heater","set_operation_mode",{entity_id:this.mapping.waterHeater,operation_mode:e.target.value});
   const evcc=this.shadowRoot.getElementById("evcc-mode"); if(evcc) evcc.onchange=e=>this._hass.callService("select","select_option",{entity_id:this.mapping.evccMode,option:e.target.value});
  }
  paintValues(){
   if(!this.shadowRoot?.querySelector("main"))return;
+  this.paintVentilation();
   this.shadowRoot.querySelectorAll("[data-role]").forEach(el=>el.textContent=this.value(el.dataset.role,Number(el.dataset.digits??1)));
   this.shadowRoot.querySelectorAll("[data-status]").forEach(el=>el.textContent=this.available(el.dataset.status)?statusLabel(el.dataset.status,this.val(el.dataset.status)):"Nicht verfügbar");
   this.shadowRoot.querySelectorAll("[data-state]").forEach(el=>{const role=el.dataset.state,on=ncBinary(this.val(role));el.textContent=on==null?'Nicht verfügbar':role==="evccCharging"?(on?"Aktiv":"Keine"):(on?"Freigegeben":"Aus");el.closest(".energy-node")?.classList.toggle("is-active",on===true);});
@@ -334,7 +401,7 @@ class NibeControlCard extends HTMLElement {
 
 class NibeControlStrategy extends HTMLElement {
  static getCreateSuggestions(){return {title:"NIBE Control",icon:"mdi:heat-pump-outline"};}
- static async generate(config){return {title:config.title||"NIBE Control",views:[{title:"Anlage",path:"anlage",icon:"mdi:heat-pump-outline",type:"panel",cards:[{type:"custom:nibe-control-card",mappings:config.mappings||{}}]}]};}
+ static async generate(config){return {title:config.title||"NIBE Control",views:[{title:"Anlage",path:"anlage",icon:"mdi:heat-pump-outline",type:"panel",cards:[{type:"custom:nibe-control-card",mappings:config.mappings||{},ventilation:config.ventilation||{}}]}]};}
 }
 
 if(!customElements.get("nibe-control-card")) customElements.define("nibe-control-card",NibeControlCard);
