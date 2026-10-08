@@ -36,3 +36,6 @@ Die ERS S40-400 wird als Rotationswärmetauscher mit zwei getrennten Luftwegen e
 
 ## Filtereinrichtung 0.7
 Eingeklappte Einstellungen im Lüftungsbereich. Native Zahl- und Datumeingabe: Plattform-eigene Kalendergeometrie und Sprache sind akzeptiert; Labels, Fehler, Datumsausgabe und Bestätigung sind Deutsch. Die endgültige Bestätigung nutzt denselben Wartungsdialog wie der Filterwechsel. Intervall und Wechseldatum werden in HA-Helfern gespeichert, nicht in Browserdaten.
+
+## Alltag 0.8
+Bestehende HA-Tokens und Schrift bleiben erhalten. Kompakte Temperaturzeile; Warmwasserbedienung als Disclosure, SG-Details eingeklappt. Leitungen verbinden Gerätepaar und Ziele über einen gemeinsamen Verteiler. Smartphone einspaltig, breitere Displays zweispaltig, keine feste Bildschirmhöhe. Keine Sticky-Navigation unter HA-App-Chrome. Diagnose als Zeilen statt leerer Großkacheln. Lüfterwerte heißen Ventilatorprozente, der Rotor bleibt statisch.
