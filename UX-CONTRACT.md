@@ -42,3 +42,9 @@
 - Beim Erstellen keine `initial`-Werte speichern, damit spätere Wechsel/Intervalle nach Neustart wiederhergestellt werden. Bei Teilfehler keine automatische Wiederholung und kein Erfolgsstatus; bereits erzeugte Helfer bleiben erhalten und werden beim nächsten Versuch wiederverwendet. Gleichnamige Mehrfachhelfer blockieren automatische Zuordnung.
 - Native Datumeingabe ist eine bewusst akzeptierte Plattformvariante. Fehler nutzen Text und aria-invalid; Bestätigungsdialog stellt Fokus wieder her und verhindert Doppelsenden.
 
+
+## Historie und Informationshierarchie 0.8
+- `ncHistoryPoints` normalisiert echte ISO-/Epoch-Zeitstempel, erhält unbekannte Grenzen und reduziert in Zeitbuckets mit Extremwerten. `ncHistoryPath` unterbricht bei unbekannten Werten. Keine synthetische Index-Zeitachse.
+- Frequenz und elektrische Leistung besitzen getrennte Diagramme und Einheiten. Reihen ohne Messwerte werden ausdrücklich bezeichnet. Legendenbuttons schalten Reihen sichtbar/verborgen. Nativer Zeitregler ist die Tastaturalternative zum Antippen eines Diagramms; Messwerte sind mit HA-Zeitzone beschriftet.
+- Kein allgemeines Alterslimit für unveränderte HA-Sensoren: last_changed ist kein Nachweis ausgefallener Abfrage. Offline und unavailable bleiben explizit. Ein transportseitiger Frischebeleg fehlt.
+- Einstellungen besitzt Datencheck; Diagnose enthält WP-Werte, Lüfterrohwert gehört zur Lüftung. Bestehende Bedien-/Wartungsbesitzer bleiben erhalten.
