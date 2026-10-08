@@ -49,3 +49,19 @@ export function ncSg(values) {
 export function ncEvccMode(raw) {
   return ({off:'Aus',pv:'PV-Überschuss',minpv:'Min. + PV',now:'Sofort'})[String(raw ?? '').toLowerCase()] || (NC_INVALID.has(String(raw ?? '').toLowerCase())?'Nicht verfügbar':String(raw));
 }
+// Calendar dates are owned by HA's timezone, independent of the display device.
+export function ncToday(timeZone='Europe/Berlin', now=new Date()) {
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
+ const get=k=>parts.find(p=>p.type===k).value;
+ return `${get('year')}-${get('month')}-${get('day')}`;
+}
+export function ncFilterDate(date, months, today) {
+ const parse=s=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(String(s)))return null;const d=new Date(`${s}T12:00:00Z`);return Number.isFinite(+d)&&d.toISOString().slice(0,10)===s?d:null;};
+ const last=parse(date), current=parse(today), n=ncNumber(months);
+ if(!last||!current||last>current)return {label:'Wechseldatum fehlt oder ist ungültig',due:null,days:null};
+ if(n==null||!Number.isInteger(n)||n<1||n>24)return {label:'Filterintervall nicht eingerichtet',due:null,days:null};
+ const day=last.getUTCDate();last.setUTCDate(1);last.setUTCMonth(last.getUTCMonth()+n);
+ const end=new Date(Date.UTC(last.getUTCFullYear(),last.getUTCMonth()+1,0)).getUTCDate();last.setUTCDate(Math.min(day,end));
+ const days=Math.round((last-current)/86400000);
+ return {due:last.toISOString().slice(0,10),days,label:days<0?`${-days} Tage überfällig`:days===0?'Heute fällig':`Noch ${days} Tage`};
+}
