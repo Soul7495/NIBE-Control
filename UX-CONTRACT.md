@@ -24,3 +24,12 @@
 - `paintValues()` aktualisiert Texte, Zustand und aktive Zweige ohne Neurendern von Tabs, Diagrammen oder Bedienfeldern.
 - Das Energie-/PV-Board zeigt keine geschätzte PV-Leistung und leitet keinen Überschuss aus fachlich unbekannten Sensoren ab.
 - Breakpoints: Desktop über 1100 px, Tablet/Wall Display bis 1100 px, Smartphone bis 760 px, kompakte Querformatdarstellung bei maximal 760 px Höhe.
+## Filterwartung 0.6
+- Kanonischer Besitzer: `bindMaintenance()` für Bestätigung und Schreibzugriff; `ncFilterDate()` für Kalenderberechnung.
+- Datum stammt aus einem ausdrücklich konfigurierten `input_datetime`-Helfer mit `has_date=true`. Kein localStorage, kein automatisch erfundenes historisches Datum.
+- „Filter gewechselt“ öffnet den app-eigenen nativen Modal-Dialog, schreibt noch nichts. Fokus auf Abbrechen, modaler Hintergrund inert, Escape schließt, Fokus kehrt zum Auslöser zurück.
+- Nur der zweite Bestätigungsbutton ruft `input_datetime.set_datetime` für diesen Helfer auf. Während der Anfrage keine Doppelübermittlung, kein Schließen/Abbrechen. Fehler bleiben im Dialog, erfolgreiche Übermittlung wird inline angekündigt. Der Livezustand wird weiterhin von HA übernommen.
+- Kein Reset einer NIBE-Meldung und keine Änderung von Lüfterstufen-/Installateurregistern.
+- Datum nach HA-Zeitzone; deutsche Anzeige; Intervall 1–24 ganze Kalendermonate, ohne Default. Fehlende/falsche/future Daten erzeugen keinen Fälligkeitstermin.
+- Plattform-eigene HA-Helferoberfläche übernimmt erstmalige Datumeingabe; kein neuer Kalender im Dashboard.
+
