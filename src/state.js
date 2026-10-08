@@ -65,3 +65,15 @@ export function ncFilterDate(date, months, today) {
  const days=Math.round((last-current)/86400000);
  return {due:last.toISOString().slice(0,10),days,label:days<0?`${-days} Tage überfällig`:days===0?'Heute fällig':`Noch ${days} Tage`};
 }
+// HA history timestamps may be ISO strings or epoch seconds (minimal response).
+export function ncHistoryPoints(rows,start,end){
+ const points=rows.map(p=>{const raw=p.lu??p.last_updated??p.lc??p.last_changed;const time=typeof raw==='number'?(raw<1e12?raw*1000:raw):Date.parse(raw);return {time,value:ncNumber(p.s??p.state)};}).filter(p=>Number.isFinite(p.time)&&p.time<=end).sort((a,b)=>a.time-b.time);
+ const before=points.filter(p=>p.time<start).at(-1),inside=points.filter(p=>p.time>=start);
+ if(before)inside.unshift({...before,time:start});
+ // Bucket sampling retains extremes and explicit unknown boundaries.
+ const buckets=new Map();for(const p of inside){const key=Math.min(119,Math.floor((p.time-start)/(end-start)*120));if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(p);}
+ const result=[];for(const bucket of buckets.values()){const finite=bucket.filter(p=>p.value!=null);const gap=bucket.find(p=>p.value==null);const selected=new Set(gap?[bucket[0],gap,bucket.at(-1)]:[bucket[0],bucket.at(-1),finite.reduce((a,b)=>!a||b.value<a.value?b:a,null),finite.reduce((a,b)=>!a||b.value>a.value?b:a,null)]);result.push(...bucket.filter(p=>selected.has(p)));}return result;
+}
+export function ncHistoryPath(points,start,end,min,span){
+ let pen=false,path='';for(const p of points){if(p.value==null){pen=false;continue;}const x=(p.time-start)/(end-start)*100,y=44-(p.value-min)/span*38;path+=`${pen?'L':'M'}${x.toFixed(2)},${y.toFixed(2)} `;pen=true;}return path.trim();
+}
