@@ -1,3 +1,11 @@
+# 0.8.0
+- Kompaktere Temperatur-, Warmwasser- und Energieansichten; technische Details eingeklappt.
+- Anlagenverteiler und klare Wärmeaktivität; präzise Ventilatorbeschriftungen.
+- Diagnose als kompakte Zeilen, Einstellungen mit sortiertem Datencheck und expliziten Zuständen.
+- Historie mit echten Zeitstempeln, Einheiten, getrennten Hz/kW, Lücken, auswählbaren Reihen und Zeitregler.
+- Bestehende Steuerungsallowlist und zweistufige Wartungsbestätigung erhalten.
+- Realer HA- und Zielgeräte-Test steht noch aus.
+
 # Changelog
 ## 0.5.0
 - neues Geräteschema mit erkennbarer Außen- und Inneneinheit und festen Leitungsanschlüssen
