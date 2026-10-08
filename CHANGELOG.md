@@ -60,3 +60,10 @@
 - Kein ungeprüftes Schreiben von NIBE-Lüfter-/Filterregistern; Automatik-/Stufenbedienung bleibt bis zum Nachweis gesperrt.
 - Zusätzliche Tests für Datum, Schaltjahr, Zeitzone und Bestätigung.
 
+# 0.7.0
+
+- Zwei Einstiegskacheln und getrennte Wärmepumpen-/Lüftungsansichten.
+- Wartungsdatum und Monatsintervall direkt im Lüftungsbereich einrichten; nach zweiter Bestätigung werden erforderliche HA-Helfer angelegt und dauerhaft genutzt.
+- Bestehende Datumsmappings bleiben unterstützt. Keine NIBE-Installateurwerte werden geschrieben.
+- 33 Tests, Build und Syntaxprüfung; reales HA-/Browserlayout noch nicht geprüft.
+
