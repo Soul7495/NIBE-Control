@@ -10,6 +10,7 @@ Eine ruhige technische Gebäudeautomation mit der Verständlichkeit einer guten 
 - Runde Ecken sind funktional abgestuft: 22 px Anlagenbild, 18 px Hauptkarten, 14 px Messwerte.
 
 ## Layout
+- Ab 0.7: Einstieg mit zwei gleichwertigen Anlagenkacheln. Wärmepumpe und Lüftung besitzen getrennte Inhaltsbereiche; die Kacheln bleiben als Wechselnavigation sichtbar. Der Einstieg zeigt keine lange kombinierte Detailseite. Verläufe/Datencheck/Diagnose gehören zur Wärmepumpe.
 - Desktop: Anlagenbild über zwei kompakten Funktionskarten und einem breiteren Energie-/PV-Board; sechs Messwerte bleiben darunter.
 - Tablet und Shelly Wall Display: zwei Spalten, Energie-/PV-Board über volle Breite, reduzierte vertikale Abstände bei geringer Displayhöhe.
 - Smartphone: einspaltige Hauptkarten, Messwerte im 2er-Raster, vereinfachtes Anlagenbild und dreiteilige EVCC-/SG-Statuskette.
@@ -33,3 +34,5 @@ Runtime-CSS bleibt kanonisch (Token-Modell B). `plantStyles()` konsumiert die be
 ## Lüftung 0.6
 Die ERS S40-400 wird als Rotationswärmetauscher mit zwei getrennten Luftwegen ergänzt. Blau nutzt `--nc-blue` für Außenluft/Zuluft, warm nutzt `--nc-warm` für Abluft/Fortluft. Der Rotor bleibt ohne Status statisch; bewegte Luftwege benötigen echte Ventilatorwerte. Mobil stehen die Wege untereinander; bestehende Heizungs-/Energiekarten behalten ihre Geometrie. Wartung verwendet einen nativen modalen Dialog mit deutschen Beschriftungen und den vorhandenen Themevariablen.
 
+## Filtereinrichtung 0.7
+Eingeklappte Einstellungen im Lüftungsbereich. Native Zahl- und Datumeingabe: Plattform-eigene Kalendergeometrie und Sprache sind akzeptiert; Labels, Fehler, Datumsausgabe und Bestätigung sind Deutsch. Die endgültige Bestätigung nutzt denselben Wartungsdialog wie der Filterwechsel. Intervall und Wechseldatum werden in HA-Helfern gespeichert, nicht in Browserdaten.
