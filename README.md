@@ -1,4 +1,4 @@
-# NIBE Control 0.7.0
+# NIBE Control 0.8.0
 
 ## Neu in 0.5.0
 Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
@@ -45,7 +45,7 @@ npm run check
 ## Lizenz
 MIT. NIBE ist eine Marke des jeweiligen Rechteinhabers; dieses Community-Projekt ist nicht mit NIBE Energy Systems verbunden.
 
-## Anlagenwahl und Filterwartung ab 0.7.0
+## Anlagenwahl und Filterwartung ab 0.8.0
 
 Der Einstieg zeigt zwei Kacheln: **Wärmepumpe** und **Lüftung**. Wähle eine Anlage; die andere Detailansicht bleibt verborgen. Die Kacheln zeigen Livewerte und erlauben jederzeit den Wechsel. Heizungsdiagramme und Diagnose bleiben in der Wärmepumpenansicht erhalten.
 
@@ -70,4 +70,7 @@ ERS S40-400: GQ2 / Register 30136 ist Abluft, GQ3 / 30137 Zuluft. Luftwege beweg
 
 ### Verifizierung
 
-33 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
+37 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
+
+## UI 0.8
+Kompakte Übersicht, Warmwasserbedienung aufklappbar, technische Details eingeklappt. Verläufe trennen Hz und kW und verwenden echte Zeitstempel. Diagramme antippen oder den Zeitregler nutzen; Legenden schalten einzelne Reihen. Einstellungen enthält den Datencheck. Lüfterwerte sind Ventilatorprozente und kein gemessener Volumenstrom. Liveprüfung in HA und auf Zielgeräten steht noch aus.
