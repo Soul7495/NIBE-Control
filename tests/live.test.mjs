@@ -30,3 +30,14 @@ test('component refresh distinguishes EVCC missing from disabled',()=>{
  const f=fixture();f.card._hass.states.evccEnabled.state='unavailable';f.card.paintValues();assert.equal(f.evcc.textContent,'Nicht verfügbar');
  f.card._hass.states.evccEnabled.state='off';f.card.paintValues();assert.equal(f.evcc.textContent,'Aus');
 });
+test('filter reset sends nothing before confirmation and targets only configured date helper',async()=>{
+ const {card}=fixture();const nodes={};const sent=[];
+ for(const k of ['#maintenance-confirm','#filter-change','#maintenance-description','[data-maintenance-error]','#maintenance-cancel','#maintenance-save','[data-maintenance-feedback]'])nodes[k]={disabled:false,textContent:'',focus(){},showModal(){this.open=true;},close(){this.open=false;this.onclose?.();}};
+ card.shadowRoot.querySelector=s=>nodes[s];card.config={ventilation:{filter_date_entity:'input_datetime.filter_test'}};
+ card._hass.states['input_datetime.filter_test']={state:'2026-08-01',attributes:{has_date:true}};
+ card._hass.callService=async(...args)=>sent.push(args);
+ card.bindMaintenance();nodes['#filter-change'].onclick();assert.equal(sent.length,0);
+ nodes['#maintenance-cancel'].onclick();assert.equal(sent.length,0);
+ nodes['#filter-change'].onclick();await nodes['#maintenance-save'].onclick();
+ assert.equal(sent.length,1);assert.equal(sent[0][0],'input_datetime');assert.equal(sent[0][1],'set_datetime');assert.equal(sent[0][2].entity_id,'input_datetime.filter_test');
+});
