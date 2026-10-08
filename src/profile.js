@@ -36,7 +36,10 @@ export const PROFILE = {
     evccCharging: { entity: "binary_sensor.evcc_nibe_charging", label: "EVCC-Anforderung", group: "optional" },
     evccAction: { entity: "sensor.evcc_nibe_pv_action", label: "PV-Aktion", group: "optional" },
     evccActionValue: { entity: "sensor.evcc_nibe_pv_action_value", label: "Anhebung", group: "optional" },
-    evccMode: { entity: "select.evcc_nibe_mode", label: "EVCC-Modus", group: "optional" }
+    evccMode: { entity: "select.evcc_nibe_mode", label: "EVCC-Modus", group: "optional" },
+    ventilationExtract: { register: "30136", entity: "sensor.fan_speed_az30_gq2_30136", label: "Abluftventilator", tag: "GQ2", unit: "%", group: "recommended" },
+    ventilationSupply: { register: "30137", entity: "sensor.fan_speed_az30_gq3_30137", label: "Zuluftventilator", tag: "GQ3", unit: "%", group: "recommended" },
+    ventilationMode: { register: "31038", entity: "sensor.fan_mode_1_31038", label: "Lüftermodus (Rohwert)", group: "diagnostic" }
   }
 };
 
