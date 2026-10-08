@@ -1,4 +1,4 @@
-# NIBE Control 0.5.0
+# NIBE Control 0.7.0
 
 ## Neu in 0.5.0
 Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
@@ -44,37 +44,30 @@ npm run check
 
 ## Lizenz
 MIT. NIBE ist eine Marke des jeweiligen Rechteinhabers; dieses Community-Projekt ist nicht mit NIBE Energy Systems verbunden.
-# Lüftung und Filterwartung ab 0.6.0
 
-ERS S40-400: GQ2 (30136) zeigt den Abluftventilator, GQ3 (30137) den Zuluftventilator. Die zwei schematischen Luftwege bewegen sich nur bei gemeldeter Ventilatoraktivität. Der Rotationswärmetauscher bleibt ohne belegten Rotorstatus statisch. Lufttemperaturen, Wirkungsgrad und Bypass werden nicht aus Außen-/Raumtemperatur geschätzt. Lüftermodus 31038 bleibt ein Rohwert in der Diagnose.
+## Anlagenwahl und Filterwartung ab 0.7.0
 
-## Filterwechseldatum einrichten
+Der Einstieg zeigt zwei Kacheln: **Wärmepumpe** und **Lüftung**. Wähle eine Anlage; die andere Detailansicht bleibt verborgen. Die Kacheln zeigen Livewerte und erlauben jederzeit den Wechsel. Heizungsdiagramme und Diagnose bleiben in der Wärmepumpenansicht erhalten.
 
-1. Home Assistant → Einstellungen → Geräte & Dienste → Helfer → Helfer erstellen → Datum und/oder Uhrzeit.
-2. Name „NIBE Lüftung Filterwechsel“, nur **Datum** aktivieren. Die tatsächlich erzeugte Entity-ID kopieren.
-3. Das Datum des letzten echten Filterwechsels im Helfer einstellen. Ist es unbekannt, keine historische Wartung erfinden.
-4. Dashboard → Bearbeiten → Rohkonfigurationseditor. In der bestehenden `strategy` ergänzen (andere Einstellungen behalten):
+### Einrichtung direkt im Dashboard
 
-```yaml
-strategy:
-  type: custom:nibe-control
-  ventilation:
-    filter_date_entity: input_datetime.nibe_luftung_filterwechsel
-    filter_interval_months: 3
-```
+1. Lüftung öffnen → **Filterwartung einrichten / ändern**.
+2. Das an deiner NIBE eingestellte Intervall in ganzen Monaten (1–24) eintragen. Die acht vorhandenen Filterregister werden weiterhin nicht ungeprüft zugeordnet.
+3. Das Datum des letzten tatsächlichen Filterwechsels eintragen. Ist es unbekannt, erst nach dem nächsten echten Tausch einrichten.
+4. **Einstellungen übernehmen** → Angaben prüfen → **Ja, Einstellungen speichern**. Erst die zweite Bestätigung speichert.
+5. Bei erstmaliger Einrichtung erstellt HA einen Datumshelfer und einen Zahlenhelfer. Administratorrechte und die HA-Integrationen input_datetime/input_number müssen verfügbar sein. Der Helfername enthält die NIBE-Integrationskennung, damit mehrere Installationen getrennt bleiben. Die Daten überleben Neustarts und stehen auf allen Displays zur Verfügung.
+6. Nach späterem Tausch **Filter gewechselt** wählen und im zweiten Dialog bestätigen.
 
-Die Entity-ID ist ein **Beispiel** und muss mit deinem Helfer übereinstimmen. `3` Monate ist ebenfalls ein Beispiel: Trage das an deiner NIBE eingestellte Intervall ein. Die acht exportierten Filterintervallregister sind noch nicht eindeutig einem ERS-Modul zugeordnet; NIBE Control übernimmt daher keinen ungeprüften Wert. Bei einer direkt eingebauten Karte liegt `ventilation` neben `type: custom:nibe-control-card`.
+Die Wartung zeigt letztes Datum, nächste Fälligkeit und verbleibende/überfällige Tage. Monatsenden und HA-Zeitzone werden berücksichtigt. Es wird keine NIBE-Filtermeldung quittiert und kein NIBE-Intervall verändert. Wenn ein Speicherschritt fehlschlägt, zeigt der Dialog einen Fehler; bereits angelegte Helfer bleiben erhalten. Eingaben prüfen und erneut speichern. Bei mehreren gleichnamigen Helfern ist eine explizite Zuordnung nötig. Helfer nicht umbenennen, solange sie nur automatisch anhand ihres ursprünglichen Namens zugeordnet sind.
 
-5. Speichern und Dashboard neu laden. Die Wartung zeigt letzten Wechsel, nächsten Termin und verbleibende/überfällige Tage.
-6. Nach dem tatsächlichen Tausch „Filter gewechselt“ drücken. Erst „Ja, Filterwechsel speichern“ im zweiten Dialog schreibt das heutige Datum in den zugeordneten Helfer. „Abbrechen“ und Escape speichern nichts. Das Datum wird nach der Home-Assistant-Zeitzone bestimmt und ist auf allen Displays gleich.
+### Bestehende Helfer / manuelle Zuordnung
 
-Der Button aktualisiert die Wartungsanzeige; er quittiert **keine NIBE-Filtermeldung**. Ohne verfügbaren Datumshelfer bleibt er deaktiviert. Monatliche Termine werden bei kurzen Monaten auf deren letzten Tag begrenzt.
+Die bisherige `ventilation.filter_date_entity`-Konfiguration bleibt gültig. Optional kann in derselben Konfiguration `filter_interval_entity` auf einen vorhandenen input_number-Helfer zeigen (min 1, max 24, step 1). Ohne diesen Helfer bleibt das alte `filter_interval_months` lesbar; bei Einrichtung über die Oberfläche wird ein dauerhafter Intervallhelfer genutzt. Für neu angelegte Helfer sind keine YAML-Einträge erforderlich.
 
-## Noch nicht freigegebene Lüftungssteuerung
+### Lüftungsdaten und Grenzen
 
-Der Export enthält keinen belegten Stufenwahl-/Automatikbefehl. Die `number.exhaust_air_fan_speed_*`-Entitäten konfigurieren feste Stufen und sind keine temporäre Stufenwahl. Deshalb erzeugt diese Version keine Lüfterbedienung und verändert keine Einregulierung. Automatik-/Stufensteuerung folgt erst mit einer verifizierten Datenquelle.
+ERS S40-400: GQ2 / Register 30136 ist Abluft, GQ3 / 30137 Zuluft. Luftwege bewegen sich nur bei gemeldeter Aktivität. Rotorbetrieb, Lufttemperaturen und Wirkungsgrad werden nicht geschätzt. Modus 31038 bleibt Diagnose-Rohwert. Lüftersteuerung samt Rückkehr zur Normalregelung ist weiterhin gesperrt: Die vorhandene Integration liefert keinen vollständigen belegten Steuerweg. Fest konfigurierte Stufenprozente bleiben unangetastet.
 
-## Verifizierung 0.6.0
+### Verifizierung
 
-Build, Syntaxprüfung und automatisierte Tests prüfen Kalendergrenzen, fehlende Daten, Zeitzone und die zweistufige Datumsänderung. Eine reale HA-Installation und geräteübergreifende Browserdarstellung sind damit noch nicht nachgewiesen.
-
+33 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
