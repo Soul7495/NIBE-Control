@@ -30,3 +30,6 @@ Das Energie-/PV-Board trennt vier Aussagen: elektrische Wärmepumpenleistung, EV
 ## Runtime mapping
 Die normativen Farben werden als `--nc-*` Variablen im Root der Komponente definiert. Oberflächen, Text, Fehler- und Fokusfarben erben aus dem aktiven Home-Assistant-Theme.
 Runtime-CSS bleibt kanonisch (Token-Modell B). `plantStyles()` konsumiert die bestehenden semantischen Variablen, ohne neue Farbpalette oder externe Schriftdateien. Geräteschrift erbt die HA-Systemschrift, Messwerte verwenden tabellarische Ziffern.
+## Lüftung 0.6
+Die ERS S40-400 wird als Rotationswärmetauscher mit zwei getrennten Luftwegen ergänzt. Blau nutzt `--nc-blue` für Außenluft/Zuluft, warm nutzt `--nc-warm` für Abluft/Fortluft. Der Rotor bleibt ohne Status statisch; bewegte Luftwege benötigen echte Ventilatorwerte. Mobil stehen die Wege untereinander; bestehende Heizungs-/Energiekarten behalten ihre Geometrie. Wartung verwendet einen nativen modalen Dialog mit deutschen Beschriftungen und den vorhandenen Themevariablen.
+
