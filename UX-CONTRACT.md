@@ -33,3 +33,12 @@
 - Datum nach HA-Zeitzone; deutsche Anzeige; Intervall 1–24 ganze Kalendermonate, ohne Default. Fehlende/falsche/future Daten erzeugen keinen Fälligkeitstermin.
 - Plattform-eigene HA-Helferoberfläche übernimmt erstmalige Datumeingabe; kein neuer Kalender im Dashboard.
 
+## Anlagenwahl und Filtereinrichtung 0.7
+- `selectPlant()` besitzt den Wechsel zwischen zwei Anlagen. Die nicht gewählte Anlage ist verborgen; Auswahlzustand ist mit `aria-pressed` zugänglich. Kein Neuaufbau des Inhalts beim Wechsel, Eingaben und Charts bleiben erhalten.
+- `bindMaintenance()` besitzt Einstellungen und Filterwechsel. Formularvalidierung erfolgt vor Öffnen des Bestätigungsdialogs; keine Speicherung beim Tippen oder beim ersten Übernehmen.
+- Ersteinrichtung legt nach ausdrücklicher Bestätigung nur einen Datums- und einen Zahlenhelfer an. Name und Discovery sind an die NIBE-config_entry gebunden. Adminrechte werden ausschließlich durch HA geprüft. Bestehende explizite Datumsmappings werden weiter genutzt.
+- HA-APIs: `input_datetime/list`, `/create`, `input_number/list`, `/create`, Entity Registry, `input_datetime.set_datetime`, `input_number.set_value`. Quelle: offizielle `home-assistant/core` Komponenten input_datetime/input_number und helpers/collection.py, geprüft 2026-10-08.
+- Datum ist Pflicht und muss ein tatsächlicher Wechsel bis heute sein. Unbekannt bedeutet unkonfiguriert, ohne erfundenes Wartungsdatum. Monatsintervall bleibt von NIBE-Einstellungen unabhängig, bis diese eindeutig zugeordnet sind.
+- Beim Erstellen keine `initial`-Werte speichern, damit spätere Wechsel/Intervalle nach Neustart wiederhergestellt werden. Bei Teilfehler keine automatische Wiederholung und kein Erfolgsstatus; bereits erzeugte Helfer bleiben erhalten und werden beim nächsten Versuch wiederverwendet. Gleichnamige Mehrfachhelfer blockieren automatische Zuordnung.
+- Native Datumeingabe ist eine bewusst akzeptierte Plattformvariante. Fehler nutzen Text und aria-invalid; Bestätigungsdialog stellt Fokus wieder her und verhindert Doppelsenden.
+
