@@ -41,3 +41,20 @@ test('filter reset sends nothing before confirmation and targets only configured
  nodes['#filter-change'].onclick();await nodes['#maintenance-save'].onclick();
  assert.equal(sent.length,1);assert.equal(sent[0][0],'input_datetime');assert.equal(sent[0][1],'set_datetime');assert.equal(sent[0][2].entity_id,'input_datetime.filter_test');
 });
+test('plant navigation separates heatpump and ventilation without rebuilding',()=>{
+ const {card}=fixture();const wp={dataset:{plant:'heatpump'},setAttribute(k,v){this[k]=v;}},vent={dataset:{plant:'ventilation'},setAttribute(k,v){this[k]=v;}};
+ const tabs=[{hidden:true},{hidden:true}],nav={hidden:true},hint={hidden:false},section={hidden:true};
+ card.shadowRoot={querySelector:s=>s==='nav'?nav:hint,querySelectorAll:s=>s==='[data-plant]'?[wp,vent]:tabs,getElementById:()=>section};
+ card.selectPlant('ventilation');assert.equal(nav.hidden,true);assert.equal(section.hidden,false);assert.ok(tabs.every(t=>t.hidden));assert.equal(vent['aria-pressed'],'true');
+ card.selectPlant('heatpump');assert.equal(nav.hidden,false);assert.equal(section.hidden,true);assert.ok(tabs.every(t=>!t.hidden));assert.equal(wp['aria-pressed'],'true');
+});
+test('maintenance reuses an existing helper using registry identity',async()=>{
+ const {card}=fixture();card.meta={ventilationSupply:{config_entry_id:'installation-a'}};card.helperIds={};const calls=[];
+ card._hass.callWS=async msg=>{calls.push(msg);return msg.type==='input_number/list'?[{id:'existing',name:card.helperName('interval')}]:[{platform:'input_number',unique_id:'existing',entity_id:'input_number.renamed'}];};
+ assert.equal(await card.ensureMaintenanceHelper('interval'),'input_number.renamed');assert.equal(calls.some(m=>m.type.endsWith('/create')),false);
+});
+test('maintenance helper creation is scoped and does not set a restart initial value',async()=>{
+ const {card}=fixture();card.meta={ventilationSupply:{config_entry_id:'installation-b'}};card.helperIds={};const calls=[];
+ card._hass.callWS=async msg=>{calls.push(msg);return msg.type.endsWith('/list')&&msg.type!=='config/entity_registry/list'?[]:msg.type.endsWith('/create')?{id:'created'}:[{platform:'input_number',unique_id:'created',entity_id:'input_number.created'}];};
+ assert.equal(await card.ensureMaintenanceHelper('interval'),'input_number.created');const create=calls.find(m=>m.type==='input_number/create');assert.equal(create.min,1);assert.equal(create.max,24);assert.equal(create.initial,undefined);assert.ok(create.name.includes('installation-b'));
+});
