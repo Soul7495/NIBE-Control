@@ -6,7 +6,7 @@ function fixture(){
  const classes=new Map();
  const stateSource=readFileSync(new URL('../src/state.js',import.meta.url),'utf8').replace(/export /g,'');
  const source=readFileSync(new URL('../src/nibe-control.js',import.meta.url),'utf8').replace(/^import .*state.js.*;\n/m,stateSource);
- vm.runInNewContext(source,{HTMLElement:class{},window:{},customElements:{get:k=>classes.get(k),define:(k,v)=>classes.set(k,v)},Intl});
+ vm.runInNewContext(source,{document:{createElement:()=>({style:{setProperty(){}},dataset:{},attributes:{},setAttribute(k,v){this.attributes[k]=v;},getAttribute(k){return this.attributes[k];}})},HTMLElement:class{},window:{},customElements:{get:k=>classes.get(k),define:(k,v)=>classes.set(k,v)},Intl});
  const card=new (classes.get('nibe-control-card'))();
  const make=dataset=>({dataset,textContent:'',classList:{values:new Set(),toggle(k,on){on?this.values.add(k):this.values.delete(k);}},closest(){return this;}});
  const main=make({}), machine=make({}), water=make({destination:'water'}), heat=make({destination:'heat'}), label=make({}), branch=make({branch:'water'}),sg=make({}),evcc=make({state:'evccEnabled'});
@@ -57,4 +57,42 @@ test('maintenance helper creation is scoped and does not set a restart initial v
  const {card}=fixture();card.meta={ventilationSupply:{config_entry_id:'installation-b'}};card.helperIds={};const calls=[];
  card._hass.callWS=async msg=>{calls.push(msg);return msg.type.endsWith('/list')&&msg.type!=='config/entity_registry/list'?[]:msg.type.endsWith('/create')?{id:'created'}:[{platform:'input_number',unique_id:'created',entity_id:'input_number.created'}];};
  assert.equal(await card.ensureMaintenanceHelper('interval'),'input_number.created');const create=calls.find(m=>m.type==='input_number/create');assert.equal(create.min,1);assert.equal(create.max,24);assert.equal(create.initial,undefined);assert.ok(create.name.includes('installation-b'));
+});
+test('controls reject unknown options, offline writes and installer roles',async()=>{
+ const {card}=fixture(),sent=[],feedback={textContent:''},element={value:'pv',disabled:false};card.shadowRoot.querySelector=()=>feedback;
+ card.mapping.evccMode='select.evcc_nibe_mode';card._hass.states[card.mapping.evccMode]={state:'off',attributes:{options:['off','pv']}};card._hass.callService=async(...args)=>sent.push(args);
+ await card.setUserControl('evccMode','now',element);assert.equal(sent.length,0);
+ card._hass.connected=false;await card.setUserControl('evccMode','pv',element);assert.equal(sent.length,0);
+ card._hass.connected=true;await card.setUserControl('degreeMinutes','10',element);assert.equal(sent.length,0);
+ await card.setUserControl('evccMode','pv',element);assert.equal(sent.length,1);assert.equal(sent[0][0],'select');assert.equal(sent[0][1],'select_option');
+});
+test('control failure restores reported value and shows feedback',async()=>{
+ const {card}=fixture(),feedback={textContent:''},element={value:'pv',disabled:false};card.shadowRoot.querySelector=()=>feedback;card.mapping.evccMode='select.test';card._hass.states['select.test']={state:'off',attributes:{options:['off','pv']}};card._hass.callService=async()=>{throw Error('offline');};
+ await card.setUserControl('evccMode','pv',element);assert.equal(element.value,'off');assert.equal(element.disabled,false);assert.match(feedback.textContent,/fehlgeschlagen/);
+});
+test('control blocks duplicate dispatch while awaiting HA',async()=>{
+ const {card}=fixture(),feedback={textContent:''},element={value:'pv',disabled:false};let resolve,requests=0;card.shadowRoot.querySelector=()=>feedback;card.mapping.evccMode='select.test';card._hass.states['select.test']={state:'off',attributes:{options:['off','pv']}};card._hass.callService=()=>{requests++;return new Promise(r=>resolve=r);};
+ const first=card.setUserControl('evccMode','pv',element);await card.setUserControl('evccMode','pv',element);assert.equal(requests,1);assert.equal(element.disabled,true);resolve();await first;assert.equal(element.disabled,false);
+});
+test('water heater sends only an offered native operating mode',async()=>{
+ const {card}=fixture(),sent=[],element={value:'eco',disabled:false};card.shadowRoot.querySelector=()=>({textContent:''});card.mapping.waterHeater='water_heater.test';card._hass.states['water_heater.test']={state:'normal',attributes:{operation_list:['normal','eco']}};card._hass.callService=async(...args)=>sent.push(args);
+ await card.setUserControl('waterHeater','eco',element);assert.equal(sent[0][0],'water_heater');assert.equal(sent[0][1],'set_operation_mode');assert.equal(sent[0][2].operation_mode,'eco');
+});
+test('history normalizer accepts keyed compressed and legacy grouped responses',()=>{
+ const {card}=fixture(),states={sensor:[{s:'31',lu:123}]};assert.equal(card.normalizeHistory(states),states);const grouped=[[{entity_id:'sensor.target',state:'31'}]];assert.equal(card.normalizeHistory(grouped)['sensor.target'],grouped[0]);assert.deepEqual(Object.keys(card.normalizeHistory([])),[]);
+});
+test('all chart groups request actual mappings including start states',async()=>{
+ const {card}=fixture();let request;card.mapping={outdoor:'sensor.outdoor',supplyTarget:'sensor.target',supply:'sensor.supply',return:'sensor.return',compressorHz:'sensor.hz',electrical:'sensor.power',hotWaterCharge:'sensor.bt6',hotWaterTop:'sensor.bt7'};card._hass.states=Object.fromEntries(Object.values(card.mapping).map(id=>[id,{state:'31',attributes:{}}]));card._hass.callWS=async r=>{request=r;return {};};const drawn=[];card.draw=(...args)=>drawn.push(args);
+ await card.loadHistory();assert.equal(request.include_start_time_state,true);assert.equal(request.minimal_response,true);assert.equal(request.significant_changes_only,false);assert.equal(request.entity_ids.length,8);assert.equal(drawn.length,4);assert.deepEqual(drawn.map(x=>x[0]),['heating','frequency','power','water']);
+});
+
+test('rendered chart keeps the minimum on the left axis and constant series visible',()=>{
+ const {card}=fixture(),buttons=[],paths={};const output={},slider={value:'1440'},svg={};const host={innerHTML:'',querySelector(s){if(s==='output')return output;if(s==='input')return slider;if(s==='svg')return svg;if(s==='.chart-legend')return {append:b=>buttons.push(b)};return paths[s]||(paths[s]={style:{}});}};
+ const start=Date.parse('2026-10-13T07:00:00Z');card.historyWindow={start,end:start+86400000};card.mapping.supplyTarget='sensor.target';card._hass.states['sensor.target']={state:'31',attributes:{unit_of_measurement:'°C'}};card.shadowRoot.getElementById=()=>host;
+ card.draw('heating',[['supplyTarget','#abc']],{'sensor.target':[{s:'31',lu:start/1000}]});
+ assert.match(host.innerHTML,/class="chart-y"/);assert.match(host.innerHTML,/class="y-min"/);assert.ok(host.innerHTML.includes('H100.00'));assert.equal(buttons.length,1);assert.equal(buttons[0].disabled,false);assert.match(output.textContent,/31,0 °C/);
+ buttons[0].onclick();assert.equal(paths['[data-series="supplyTarget"]'].style.display,'none');buttons[0].onclick();assert.equal(paths['[data-series="supplyTarget"]'].style.display,'');
+});
+test('rendered empty history clearly reports missing measurements',()=>{
+ const {card}=fixture(),host={innerHTML:''};card.historyWindow={start:0,end:86400000};card.shadowRoot.getElementById=()=>host;card.mapping.supplyTarget='sensor.target';card.draw('heating',[['supplyTarget','#abc']],{});assert.match(host.innerHTML,/Keine Messwerte/);
 });
