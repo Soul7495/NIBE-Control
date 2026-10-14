@@ -110,3 +110,7 @@ test('history rejects old responses after an installation change',async()=>{
 test('a failed history refresh retains the last successful curves',async()=>{
  const {card}=fixture(),feedback={textContent:''};card.mapping.outdoor='sensor.outdoor';card._hass.states['sensor.outdoor']={state:'20',attributes:{}};card.historyWindow={start:1,end:2};card._hass.callWS=async()=>{throw Error('offline');};card.shadowRoot.querySelector=()=>feedback;let cleared=false;card.shadowRoot.querySelectorAll=()=>{cleared=true;return [];};await card.loadHistory();assert.equal(cleared,false);assert.match(feedback.textContent,/letzten erfolgreichen Stand/);assert.equal(card.historyPending,false);
 });
+
+test('video regression: diagnostic frequency labels do not repeat their tag',()=>{
+ const {card}=fixture();card.mapping={};card._hass.states={};assert.ok(!card.diagnostics().includes('Verdichter Soll · Soll'));
+});
