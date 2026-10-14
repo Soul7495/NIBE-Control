@@ -1,47 +1,8 @@
-/* NIBE Control 0.8.1 — local Home Assistant dashboard */
-import { ncNumber, ncBinary, ncOperating, ncSg, ncEvccMode, ncToday, ncFilterDate, ncHistoryPoints, ncHistoryPath, ncHistoryValue, ncHistoryScale } from './state.js';
-const VERSION = "0.8.1";
-const PROFILE = {
- outdoor:{r:"30002",e:"sensor.current_outdoor_temperature_bt1_30002",l:"Außen",t:"BT1",u:"°C"},
- room:{e:"climate.vvms320_climate_system_s1",a:"current_temperature",l:"Innen",u:"°C"},
- roomSetpoint:{r:"40207",e:"number.room_sensor_set_point_value_climate_system_1_40207",l:"Raum-Sollwert (Register)",u:"°C",diag:1},
- useRoomSensor:{r:"40203",e:"switch.use_room_sensor_climate_system_1_40203",l:"Raumfühlerregelung",diag:1},
- supply:{r:"30006",e:"sensor.supply_line_bt2_30006",l:"Vorlauf",t:"BT2",u:"°C"},
- return:{r:"30008",e:"sensor.return_line_bt3_30008",l:"Rücklauf",t:"BT3",u:"°C"},
- supplyTarget:{r:"31018",e:"sensor.calculated_supply_climate_system_1_31018",l:"Vorlauf Soll",u:"°C",req:1},
- degreeMinutes:{r:"40012",e:"number.degree_minutes_40012",l:"Gradminuten",u:"DM",req:1},
- flow:{r:"30041",e:"sensor.flow_sensor_bf1_30041",l:"Volumenstrom",t:"BF1",u:"L/min",req:1},
- hpSupply:{r:"31479",e:"sensor.condenser_sensor_supply_line_eb101_bt12_31479",l:"WP-Vorlauf",t:"BT12",u:"°C",req:1},
- hpReturn:{r:"31476",e:"sensor.return_line_eb101_bt3_31476",l:"WP-Rücklauf",t:"BT3",u:"°C",diag:1},
- compressorHz:{r:"31804",e:"sensor.current_compressor_frequency_eb101_31804",l:"Verdichter Ist",u:"Hz",req:1},
- requestedHz:{r:"31855",e:"sensor.requested_compressor_frequency_eb101_31855",l:"Verdichter Soll",u:"Hz",diag:1},
- compressorStatus:{r:"31485",e:"sensor.compressor_status_eb101_31485",l:"Verdichterstatus"},
- priority:{r:"31029",e:"sensor.priority_31029",l:"Betriebspriorität",req:1},
- electrical:{r:"32306",e:"sensor.energy_log_current_power_consumption_32306",l:"Elektrische Leistung",u:"kW",req:1},
- outdoorPower:{r:"31807",e:"sensor.power_eb101_ep14_31807",l:"Außeneinheit",u:"kW",diag:1},
- thermal:{r:"30407",e:"sensor.generated_power_heating_eb101_30407",l:"Heizleistung",u:"kW",diag:1},
- additionalHeat:{r:"31028",e:"sensor.power_internal_additional_heat_31028",l:"Heizstab",u:"kW",req:1},
- hotWaterTop:{r:"30009",e:"sensor.hot_water_top_bt7_30009",l:"Warmwasser oben",t:"BT7",u:"°C"},
- hotWaterCharge:{r:"30010",e:"sensor.hot_water_charging_bt6_30010",l:"Warmwasser Laden",t:"BT6",u:"°C"},
- hotWaterMode:{r:"31039",e:"sensor.current_hot_water_mode_without_spa_sc_31039",l:"Warmwassermodus",req:1},
- moreHotWater:{r:"31079",e:"sensor.more_hot_water_status_31079",l:"Mehr Warmwasser",req:1},
- diverter:{r:"32197",e:"sensor.diverter_valve_hot_water_qn10_32197",l:"Umschaltventil",diag:1},
- sgMode:{r:"31912",e:"sensor.operating_mode_sg_ready_31912",l:"SG Ready",req:1},
- sgA:{r:"31913",e:"sensor.sg_ready_input_a_31913",l:"SG Eingang A",diag:1,req:1},
- sgB:{r:"31914",e:"sensor.sg_ready_input_b_31914",l:"SG Eingang B",diag:1,req:1},
- defrost:{r:"31806",e:"sensor.defrosting_eb101_31806",l:"Abtauung",req:1},
- alarm:{r:"31976",e:"sensor.alarm_number_31976",l:"Alarmnummer"},
- climate:{e:"climate.vvms320_climate_system_s1",l:"Heizkreis"},
- waterHeater:{e:"water_heater.vvms320_hot_water",l:"Warmwasser"},
- evccEnabled:{e:"binary_sensor.evcc_nibe_enabled",l:"EVCC NIBE",optional:1},
- evccCharging:{e:"binary_sensor.evcc_nibe_charging",l:"EVCC-Anforderung",optional:1},
- evccAction:{e:"sensor.evcc_nibe_pv_action",l:"PV-Aktion",optional:1},
- evccActionValue:{e:"sensor.evcc_nibe_pv_action_value",l:"Anhebung",optional:1},
- evccMode:{e:"select.evcc_nibe_mode",l:"EVCC-Modus",optional:1},
- ventilationExtract:{r:"30136",e:"sensor.fan_speed_az30_gq2_30136",l:"Abluftventilator",t:"GQ2",u:"%",req:1},
- ventilationSupply:{r:"30137",e:"sensor.fan_speed_az30_gq3_30137",l:"Zuluftventilator",t:"GQ3",u:"%",req:1},
- ventilationMode:{r:"31038",e:"sensor.fan_mode_1_31038",l:"Lüftermodus (Rohwert)",diag:1}
-};
+/* NIBE Control 0.9.0 — local Home Assistant dashboard */
+import { ncNumber, ncBinary, ncOperating, ncSg, ncEvccMode, ncToday, ncFilterDate, ncHistoryPoints, ncHistoryPath, ncHistoryValue, ncHistoryScale, ncHistoryStats } from './state.js';
+import { PROFILE as DEVICE_PROFILE, resolveDiscovery, WRITE_ALLOWLIST } from './profile.js';
+const VERSION = "0.9.0";
+const PROFILE=Object.fromEntries(Object.entries(DEVICE_PROFILE.roles).map(([role,p])=>[role,{r:p.register,e:p.entity,a:p.attribute,l:p.label+(role==='compressorHz'?' Ist':role==='requestedHz'?' Soll':''),t:p.tag,u:p.unit,req:p.group==='recommended'||role==='sgA'||role==='sgB',diag:p.group==='diagnostic',optional:p.group==='optional'}]));
 const INVALID = new Set(["unknown","unavailable","none","null",""]);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const valid = s => !!s && !INVALID.has(String(s.state).toLowerCase());
@@ -60,27 +21,33 @@ function statusLabel(role, raw) {
 
 class NibeControlCard extends HTMLElement {
  setConfig(config){ this.config=config||{}; if(!this.shadowRoot)this.attachShadow({mode:"open"}); }
- set hass(hass){ const first=!this._hass; this._hass=hass; if(first) this.init(); else this.paintValues(); }
+ set hass(hass){ const first=!this._hass,reconnected=this._hass?.connected===false&&hass.connected!==false; this._hass=hass; if(first) this.init(); else{this.paintValues();if(reconnected)this.refreshRegistry().then(()=>this.loadHistory());} }
  async init(){
   try {
    const [entities,devices]=await Promise.all([
     this._hass.callWS({type:"config/entity_registry/list"}),
     this._hass.callWS({type:"config/device_registry/list"})
    ]);
-   this.registry=entities; this.devices=devices;
-   const byReg=new Map(entities.map(x=>[reg(x.unique_id),x]).filter(x=>x[0]));
-   this.mapping={}; this.meta={};
-   for(const [role,spec] of Object.entries(PROFILE)){
-    const entityId=this.config?.mappings?.[role] || byReg.get(spec.r)?.entity_id || spec.e;
-    this.mapping[role]=entityId; this.meta[role]=entities.find(x=>x.entity_id===entityId);
-   }
-  } catch(e){ this.mapping=Object.fromEntries(Object.entries(PROFILE).map(([k,v])=>[k,v.e])); this.meta={}; }
+   this.registry=entities; this.devices=devices;this.discoveryError=false;
+   this.applyDiscovery();
+  } catch(e){this.registry=[];this.discoveryError=true;this.mapping=Object.fromEntries(Object.entries(PROFILE).map(([k,v])=>[k,this.config?.mappings?.[k]||v.e]));this.meta={};if(!this.config?.mappings?.room)this.mapping.room=this.mapping.climate;}
   this.helperIds={}; this.findMaintenanceHelpers();
   this.render(); this.loadHistory();
  }
+ async refreshRegistry(){
+  if(this.registryPending)return;this.registryPending=true;
+  try{const rows=await this._hass.callWS({type:'config/entity_registry/list'});this.registry=rows;this.discoveryError=false;this.applyDiscovery();this.paintValues();}
+  catch(e){this.discoveryError=true;const message=this.shadowRoot?.querySelector('[data-discovery-error]');if(message)message.textContent='Registry nicht erreichbar. Vorhandene Zuordnung bleibt erhalten.';}
+  finally{this.registryPending=false;}
+ }
+ applyDiscovery(){
+  const result=resolveDiscovery(this.registry,this.config?.mappings||{},this.config?.config_entry_id);const changed=JSON.stringify(this.mapping||{})!==JSON.stringify(result.mapping);if(changed){this.historyGeneration=(this.historyGeneration||0)+1;this.historyPending=false;}this.discovery=result;this.mapping=result.mapping;this.meta=Object.fromEntries(Object.entries(this.mapping).map(([r,id])=>[r,this.registry.find(e=>e.entity_id===id)]));
+ }
+ connectedCallback(){clearInterval(this.historyTimer);this.historyTimer=setInterval(()=>{if(this._hass?.connected!==false&&this.selectedPlant==='heatpump'&&this.shadowRoot?.getElementById('charts')?.classList.contains('active')&&document.visibilityState!=='hidden')this.loadHistory();},60000);}
+ disconnectedCallback(){this.historyPending=false;clearInterval(this.historyTimer);this.historyTimer=null;this.historyGeneration=(this.historyGeneration||0)+1;}
  st(role){return this._hass.states[this.mapping?.[role]];}
  val(role){const s=this.st(role), a=PROFILE[role]?.a; return a ? s?.attributes?.[a] : s?.state;}
- available(role){return valid(this.st(role));}
+ available(role){return valid(this.st(role))&&(!(PROFILE[role]?.a||PROFILE[role]?.u)||ncNumber(this.val(role))!=null);}
  unit(role){return this.st(role)?.attributes?.unit_of_measurement || PROFILE[role]?.u || "";}
  value(role,d=1){const value=this.val(role);return this.available(role)&&ncNumber(value)!=null?`${fmt(value,d)}${this.unit(role)?` ${esc(this.unit(role))}`:""}`:"—";}
  live(role,d=1){return `<span data-role="${role}" data-digits="${d}">${this.value(role,d)}</span>`;}
@@ -125,7 +92,7 @@ class NibeControlCard extends HTMLElement {
   const evccEnabled=yes(this.val("evccEnabled")), evccRequest=yes(this.val("evccCharging"));
   return `<div class="overview-grid">
    <section class="panel climate-panel"><div class="climate-values"><span>Raum<b>${this.live("room")}</b></span><span>Außen<b>${this.live("outdoor")}</b></span></div><details class="technical-details"><summary>Temperaturinformationen</summary><p class="hint">Gemessene Raumtemperatur. Der MyUplink-Sollwert wird lokal nicht bereitgestellt.</p></details></section>
-   <details class="panel water-panel"><summary>Warmwasser · Bedienung und Ladefühler</summary><div class="title"><div><small>WARMWASSER</small><h2>${this.live("hotWaterTop")}</h2></div><ha-icon icon="mdi:water-boiler"></ha-icon></div><div class="pair"><span>Ladefühler · BT6 <b>${this.live("hotWaterCharge")}</b></span><span>Betrieb <b>${esc(wh?.state||"—")}</b></span></div>${ops.length?`<label class="mode-control" for="hw-mode">Warmwassermodus<select id="hw-mode">${ops.map(o=>`<option ${o===wh.state?"selected":""}>${esc(o)}</option>`).join("")}</select></label>`:`<p class="hint">Kein schaltbarer Warmwassermodus verfügbar.</p>`}</details>
+   <details class="panel water-panel"><summary>Warmwasser · Bedienung und Ladefühler</summary><div class="title"><div><small>WARMWASSER</small><h2>${this.live("hotWaterTop")}</h2></div><ha-icon icon="mdi:water-boiler"></ha-icon></div><div class="pair"><span>Ladefühler · BT6 <b>${this.live("hotWaterCharge")}</b></span><span>Warmwassermodus <b data-raw="hotWaterMode"></b></span><span>Mehr Warmwasser <b data-raw="moreHotWater"></b></span><span>Betrieb <b><span data-raw="waterHeater"></span></b></span></div><label class="mode-control" for="hw-mode">Warmwassermodus<select id="hw-mode" disabled>${ops.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select></label><p class="hint" data-water-control-help></p></details>
    <section class="panel energy-board"><div class="energy-head"><div><small>ENERGIE · PV-OPTIMIERUNG</small><h2>${this.live("electrical")}</h2><p>Elektrische Leistung</p></div><ha-icon icon="mdi:solar-power-variant-outline"></ha-icon></div>
     <div class="energy-flow">
      <article class="energy-node ${evccEnabled?"is-active":""}"><ha-icon icon="mdi:solar-power"></ha-icon><span>EVCC-Freigabe</span><b data-state="evccEnabled">${evccEnabled?"Aktiv":"Inaktiv"}</b></article>
@@ -134,18 +101,18 @@ class NibeControlCard extends HTMLElement {
      <i aria-hidden="true"></i>
      <article class="energy-node sg"><ha-icon icon="mdi:transmission-tower-import"></ha-icon><span>SG Ready</span><b data-sg>${esc(sg)}</b></article>
     </div>
-    <div class="energy-facts">${evccPresent?`<span>PV-Aktion<b data-raw="evccAction">${esc(this.val("evccAction")||"—")}</b></span><span>Anhebung<b>${this.live("evccActionValue")}</b></span><span>EVCC-Modus<b data-raw="evccMode">${esc(this.val("evccMode")||"—")}</b></span>`:`<span class="wide">EVCC<b>Nicht erkannt</b></span>`}<span>Heizstab<b>${this.live("additionalHeat")}</b></span></div>${this.evccControl()}
+    <div class="energy-facts"><span>PV-Aktion<b data-raw="evccAction"></b></span><span>Anhebung<b>${this.live("evccActionValue")}</b></span><span>EVCC-Modus<b data-raw="evccMode"></b></span><span>Heizstab<b>${this.live("additionalHeat")}</b></span></div>${this.evccControl()}
     <details class="technical-details"><summary>SG-Kontakte und Erklärung</summary><div class="sg-contacts"><span>SG A <b data-contact="sgA">—</b></span><span>SG B <b data-contact="sgB">—</b></span></div><p class="energy-explanation" data-energy-explanation></p><p class="hint" data-sg-detail></p></details>
    </section>
   </div><p role="status" aria-live="polite" class="hint" data-control-feedback></p><div class="metric-row">${["supplyTarget","supply","return","hpSupply","degreeMinutes","flow"].map(r=>this.metric(r)).join("")}</div>`;
  }
- evccControl(){const s=this.st("evccMode"),options=s?.attributes?.options||[];if(!s||!options.length)return "";return `<label class="mode-control" for="evcc-mode">EVCC-Modus<select id="evcc-mode">${options.map(o=>`<option ${o===s.state?"selected":""}>${esc(o)}</option>`).join("")}</select></label>`;}
- charts(){return `<div class="chart-grid">${["heating","frequency","power","water"].map(k=>`<section class="panel chart"><div class="chart-head"><div><small>24 STUNDEN</small><h3>${k==="heating"?"Heizkreis":k==="frequency"?"Verdichterfrequenz":k==="power"?"Elektrische Leistung":"Warmwasser"}</h3></div><span class="legend"></span></div><div class="plot" id="plot-${k}"><div class="loader">Historie wird geladen …</div></div></section>`).join("")}</div>`;}
- dataState(role){if(this.meta?.[role]?.disabled_by)return 'Deaktiviert';return this.available(role)?'Verfügbar':this.meta?.[role]||this.st(role)?'Nicht verfügbar':'Nicht zugeordnet';}
+ evccControl(){return `<label class="mode-control" for="evcc-mode">EVCC-Modus<select id="evcc-mode" disabled></select></label>`;}
+ charts(){return `<label class="mode-control" for="history-period">Zeitraum<select id="history-period"><option value="6">6 Stunden</option><option value="12">12 Stunden</option><option value="24" selected>24 Stunden</option></select></label><p class="hint" data-history-feedback role="status">Verläufe werden beim Öffnen und jede Minute aktualisiert. Tippe auf eine Kurve oder bewege den Zeitregler, um alle Messwerte desselben Moments zu vergleichen.</p><div class="chart-grid">${["heating","frequency","power","water"].map(k=>`<section class="panel chart"><div class="chart-head"><div><small data-period-label>${this.historyHours||24} STUNDEN</small><h3>${k==="heating"?"Heizkreis":k==="frequency"?"Verdichterfrequenz":k==="power"?"Elektrische Leistung":"Warmwasser"}</h3></div><span class="legend"></span></div><div class="plot" id="plot-${k}"><div class="loader">Historie wird geladen …</div></div></section>`).join("")}</div>`;}
+ dataState(role){if(this.discovery?.ambiguous?.includes(role))return 'Mehrdeutig';if(this.meta?.[role]?.disabled_by)return 'Deaktiviert';return this.available(role)?'Verfügbar':this.meta?.[role]||this.st(role)?'Nicht verfügbar':'Nicht zugeordnet';}
  setup(){
   const roles=Object.entries(PROFILE).filter(([,p])=>p.req),ready=roles.filter(([r])=>this.available(r)).length;
-  const rows=roles.sort(([a],[b])=>Number(this.available(a))-Number(this.available(b))).map(([r,p])=>`<li><span><b>${esc(p.l)}</b><em>${this.dataState(r)}</em><details class="technical-details"><summary>Entity anzeigen</summary><small>${esc(this.mapping[r])}</small></details></span></li>`).join('');
-  return `<section class="panel setup"><div class="title"><div><small>EINRICHTUNG</small><h2>Datencheck</h2></div><span class="score">${ready}/${roles.length}</span></div><p>${ready} von ${roles.length} empfohlenen Datenpunkten verfügbar. Fehlende Werte stehen zuerst.</p><ul>${rows}</ul><aside><b>Deaktivierte Werte aktivieren:</b> Einstellungen → Geräte & Dienste → NIBE Heat Pump → Gerät → Entitäten. „Deaktivierte Entitäten anzeigen“, gewünschte Entity öffnen und aktivieren. Nicht verfügbare Werte benötigen eine Prüfung der Integration.</aside></section>`;
+  const rows=roles.sort(([a],[b])=>Number(this.available(a))-Number(this.available(b))).map(([r,p])=>`<li><span><b>${esc(p.l)}</b><em data-check="${r}">${this.dataState(r)}</em><details class="technical-details"><summary>Entity anzeigen</summary><small data-entity="${r}">${esc(this.mapping[r])}</small></details></span></li>`).join('');
+  return `<section class="panel setup"><div class="title"><div><small>EINRICHTUNG</small><h2>Zuordnung und Datencheck</h2></div><span class="score">${ready}/${roles.length}</span></div><label class="mode-control" for="installation">NIBE-Installation<select id="installation"><option value="">${this.discovery?.entries?.length>1?'Bitte auswählen':'Automatisch'}</option>${(this.discovery?.entries||[]).map(id=>`<option value="${esc(id)}" ${id===this.discovery.selected?'selected':''}>${esc(this.devices?.find(d=>d.config_entries?.includes(id))?.name||'NIBE')} · ${esc(id.slice(-6))}</option>`).join('')}</select></label><p class="hint">Auswahl gilt für diese Sitzung. Dauerhaft: config_entry_id in der Dashboard-Strategie speichern. Bestehende manuelle Zuordnungen haben Vorrang.</p><p data-discovery-error>${this.discoveryError?'Registry nicht erreichbar. Manuelle Zuordnungen bleiben erhalten.':''}</p><p data-setup-score>${ready} von ${roles.length} empfohlenen Datenpunkten verfügbar. Fehlende Werte stehen zuerst.</p><ul>${rows}</ul><aside><b>Deaktivierte Werte aktivieren:</b> Einstellungen → Geräte & Dienste → NIBE Heat Pump → Gerät → Entitäten. „Deaktivierte Entitäten anzeigen“, gewünschte Entity öffnen und aktivieren. Nicht verfügbare Werte benötigen eine Prüfung der Integration.</aside></section>`;
  }
  diagnostics(){
   const rows=Object.entries(PROFILE).filter(([r,p])=>p.diag&&!r.startsWith('ventilation')).map(([r,p])=>`<div class="diagnostic-row"><span>${esc(p.l)}${p.t?' · '+esc(p.t):''}</span><b data-diagnostic="${r}"></b><small data-quality="${r}"></small></div>`).join('');
@@ -187,9 +154,9 @@ class NibeControlCard extends HTMLElement {
  filterToday(){return ncToday(this._hass.config?.time_zone||'Europe/Berlin');}
  paintVentilation(){
   const q=s=>this.shadowRoot.querySelector(s), config=this.config?.ventilation||{}, helper=this.filterHelper(), entity=helper?this._hass.states[helper]:null;
-  let active=false,known=false;
-  this.shadowRoot.querySelectorAll('[data-vent-lane]').forEach(el=>{const n=this._hass.connected===false?null:ncNumber(this.val(el.dataset.ventLane));known=known||n!=null;active=active||n>0;el.classList.toggle('is-active',n!=null&&n>0);});
-  this.shadowRoot.querySelectorAll('[data-vent-operation]').forEach(status=>status.textContent=!known?'Lüfterwerte nicht verfügbar':active?'Ventilatoren laufen':'Ventilatoren stehen');
+  let active=false,known=false,knownCount=0;
+  this.shadowRoot.querySelectorAll('[data-vent-lane]').forEach(el=>{const n=this._hass.connected===false?null:ncNumber(this.val(el.dataset.ventLane));known=known||n!=null;if(n!=null)knownCount++;active=active||n>0;el.classList.toggle('is-active',n!=null&&n>0);});
+  this.shadowRoot.querySelectorAll('[data-vent-operation]').forEach(status=>status.textContent=!known?'Lüfterwerte nicht verfügbar':knownCount<2?'Lüfterdaten teilweise verfügbar':active?'Ventilatoren laufen':'Ventilatoren stehen');
   const writable=valid(entity)&&entity.attributes?.has_date===true&&this._hass.connected!==false;
   const date=entity?.state?.slice(0,10),interval=this.filterInterval(), maintenance=ncFilterDate(date,interval,this.filterToday());
   const format=d=>d?new Intl.DateTimeFormat('de-DE',{timeZone:'UTC'}).format(new Date(`${d}T12:00:00Z`)):'Nicht bekannt';
@@ -238,8 +205,10 @@ class NibeControlCard extends HTMLElement {
  }
  bind(){
   this.bindMaintenance();
+  const installation=this.shadowRoot.getElementById('installation');if(installation)installation.onchange=()=>{const selectedPlant=this.selectedPlant,activeTab=this.shadowRoot.querySelector('nav button.active')?.dataset.tab||'overview';this.config={...this.config,config_entry_id:installation.value||null};this.historyGeneration=(this.historyGeneration||0)+1;this.historyPending=false;this.chartInspectors={};this.applyDiscovery();this.helperIds={};this.findMaintenanceHelpers();this.render();if(selectedPlant)this.selectPlant(selectedPlant);this.shadowRoot.querySelector(`[data-tab="${activeTab}"]`)?.click();this.loadHistory();};
   this.shadowRoot.querySelectorAll('[data-plant]').forEach(b=>b.onclick=()=>this.selectPlant(b.dataset.plant));
-  this.shadowRoot.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{this.shadowRoot.querySelectorAll("nav button,.tab").forEach(x=>x.classList.remove("active")); b.classList.add("active"); this.shadowRoot.getElementById(b.dataset.tab).classList.add("active");});
+  this.shadowRoot.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{this.shadowRoot.querySelectorAll("nav button,.tab").forEach(x=>x.classList.remove("active")); b.classList.add("active"); this.shadowRoot.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="charts")this.loadHistory();if(b.dataset.tab==="setup")this.refreshRegistry();});
+  const period=this.shadowRoot.getElementById('history-period');if(period)period.value=String(this.historyHours||24);if(period)period.onchange=()=>{this.historyHours=Number(period.value);this.historyGeneration=(this.historyGeneration||0)+1;this.historyPending=false;this.inspectionTime=null;this.loadHistory();};
   const select=this.shadowRoot.getElementById("hw-mode"); if(select) select.onchange=e=>this.setUserControl("waterHeater",e.target.value,select);
   const evcc=this.shadowRoot.getElementById("evcc-mode"); if(evcc) evcc.onchange=e=>this.setUserControl("evccMode",e.target.value,evcc);
  }
@@ -247,7 +216,7 @@ class NibeControlCard extends HTMLElement {
   const commands={waterHeater:{domain:'water_heater',service:'set_operation_mode',field:'operation_mode',options:'operation_list'},evccMode:{domain:'select',service:'select_option',field:'option',options:'options'}};
   const command=commands[role],state=this.st(role),feedback=this.shadowRoot.querySelector('[data-control-feedback]');
   if(this.controlPending?.[role])return;
-  if(!command||!valid(state)||this._hass.connected===false||!this.mapping[role]?.startsWith(command.domain+'.')||!state.attributes?.[command.options]?.includes(value)){if(feedback)feedback.textContent='Bedienung nicht verfügbar. Es wurde kein Befehl gesendet.';if(element)element.value=state?.state||'';return;}
+  if(!command||!WRITE_ALLOWLIST[role]?.includes(command.domain+'.'+command.service)||!valid(state)||this._hass.connected===false||!this.mapping[role]?.startsWith(command.domain+'.')||!state.attributes?.[command.options]?.includes(value)){if(feedback)feedback.textContent='Bedienung nicht verfügbar. Es wurde kein Befehl gesendet.';if(element)element.value=state?.state||'';return;}
   this.controlPending=this.controlPending||{};this.controlPending[role]=true;element.disabled=true;if(feedback)feedback.textContent='Befehl wird gesendet …';
   try{await this._hass.callService(command.domain,command.service,{entity_id:this.mapping[role],[command.field]:value});if(feedback)feedback.textContent='Befehl gesendet. Den bestätigten Zustand liefert Home Assistant.';}
   catch(e){element.value=this.st(role)?.state||'';if(feedback)feedback.textContent='Befehl fehlgeschlagen. Angezeigten Zustand prüfen und erneut versuchen.';}
@@ -256,14 +225,20 @@ class NibeControlCard extends HTMLElement {
  paintValues(){
   if(!this.shadowRoot?.querySelector("main"))return;
   this.paintVentilation();
-  for(const [id,role] of [['hw-mode','waterHeater'],['evcc-mode','evccMode']]){const el=this.shadowRoot.getElementById?.(id);if(el&&!this.controlPending?.[role]){el.disabled=this._hass.connected===false||!this.available(role);if(this.available(role))el.value=this.val(role);}}
+  this.shadowRoot.querySelectorAll('[data-entity]').forEach(el=>el.textContent=this.mapping[el.dataset.entity]||'Keine eindeutige Zuordnung');
+  this.shadowRoot.querySelectorAll('[data-check]').forEach(el=>el.textContent=this.dataState(el.dataset.check));
+  const recommended=Object.entries(PROFILE).filter(([,p])=>p.req),ready=recommended.filter(([r])=>this.available(r)).length;
+  const score=this.shadowRoot.querySelector('.score');if(score)score.textContent=ready+'/'+recommended.length;
+  const setupScore=this.shadowRoot.querySelector('[data-setup-score]');if(setupScore)setupScore.textContent=ready+' von '+recommended.length+' empfohlenen Datenpunkten verfügbar.';
 
+  for(const [id,role,optionKey] of [['hw-mode','waterHeater','operation_list'],['evcc-mode','evccMode','options']]){const el=this.shadowRoot.getElementById?.(id);if(el&&!this.controlPending?.[role]){const options=this.st(role)?.attributes?.[optionKey]||[];const signature=JSON.stringify(options);if(el.dataset&&el.dataset.options!==signature){el.replaceChildren(...options.map(value=>{const option=document.createElement('option');option.value=value;option.textContent=role==='evccMode'?ncEvccMode(value):String(value);return option;}));el.dataset.options=signature;}el.disabled=this._hass.connected===false||!this.available(role)||!options.length;if(this.available(role))el.value=this.val(role);}}
+  const waterHelp=this.shadowRoot.querySelector('[data-water-control-help]');if(waterHelp)waterHelp.textContent=this.st('waterHeater')?.attributes?.operation_list?.length?'Nur die von Home Assistant angebotenen Modi sind bedienbar.':'Kein schaltbarer Warmwassermodus verfügbar.';
   this.shadowRoot.querySelectorAll('[data-diagnostic]').forEach(el=>{const r=el.dataset.diagnostic;el.textContent=this.available(r)?PROFILE[r].u?this.value(r):String(this.val(r)):'—';});
   this.shadowRoot.querySelectorAll('[data-quality]').forEach(el=>el.textContent=el.tagName==='EM'&&this.available(el.dataset.quality)?'':this.dataState(el.dataset.quality));
   this.shadowRoot.querySelectorAll("[data-role]").forEach(el=>el.textContent=this.value(el.dataset.role,Number(el.dataset.digits??1)));
   this.shadowRoot.querySelectorAll("[data-status]").forEach(el=>el.textContent=this.available(el.dataset.status)?statusLabel(el.dataset.status,this.val(el.dataset.status)):"Nicht verfügbar");
   this.shadowRoot.querySelectorAll("[data-state]").forEach(el=>{const role=el.dataset.state,on=ncBinary(this.val(role));el.textContent=on==null?'Nicht verfügbar':role==="evccCharging"?(on?"Aktiv":"Keine"):(on?"Freigegeben":"Aus");el.closest(".energy-node")?.classList.toggle("is-active",on===true);});
-  this.shadowRoot.querySelectorAll("[data-raw]").forEach(el=>el.textContent=el.dataset.raw==='evccMode'?ncEvccMode(this.val('evccMode')):String(this.val(el.dataset.raw)??"—"));
+  this.shadowRoot.querySelectorAll("[data-raw]").forEach(el=>el.textContent=el.dataset.raw==='evccMode'?ncEvccMode(this.val('evccMode')):this.available(el.dataset.raw)?(['hotWaterMode','moreHotWater'].includes(el.dataset.raw)&&ncNumber(this.val(el.dataset.raw))!=null?'Statuscode '+this.val(el.dataset.raw):({off:'Aus',on:'Ein'})[this.val(el.dataset.raw)]||String(this.val(el.dataset.raw)??'—')):'Nicht verfügbar');
   const operation=this.operation(), main=this.shadowRoot.querySelector('main');
   main.className=`app ${operation.mode}`;
   this.shadowRoot.querySelectorAll('[data-operation]').forEach(el=>el.textContent=operation.label);
@@ -282,13 +257,16 @@ class NibeControlCard extends HTMLElement {
   if(explanation)explanation.textContent=enabled==null?'EVCC ist nicht verfügbar. NIBE und SG Ready werden unabhängig davon angezeigt.':request===true?`EVCC fordert Wärme an. NIBE: ${operation.label}.`:request==null?'EVCC-Anforderung ist nicht verfügbar.':'Keine EVCC-Anforderung. NIBE regelt Heizung und Warmwasser selbstständig.';
  }
  async loadHistory(){
+  if(this.historyPending||this._hass.connected===false||!this.mapping)return;
   const sets={heating:[["outdoor","#78aee8"],["supplyTarget","#e9b15b"],["supply","#ee765f"],["return","#8fc58a"]],frequency:[["compressorHz","#49b6a1"]],power:[["electrical","#e9b15b"]],water:[["hotWaterCharge","#55a8d8"],["hotWaterTop","#ee765f"]]};
   const roles=[...new Set(Object.values(sets).flat().map(x=>x[0]).filter(r=>this.mapping[r]&&this.st(r)))]; if(!roles.length){this.shadowRoot.querySelectorAll('.plot').forEach(p=>p.innerHTML='<div class="empty">Keine Historien-Entitäten verfügbar</div>');return;}
-  const end=new Date(), start=new Date(end-86400000);this.historyWindow={start:+start,end:+end};
+  const end=new Date(), start=new Date(end-(this.historyHours||24)*3600000);const historyWindow={start:+start,end:+end};const generation=(this.historyGeneration||0)+1;this.historyGeneration=generation;this.historyPending=true;
   try {const result=await this._hass.callWS({type:"history/history_during_period",start_time:start.toISOString(),end_time:end.toISOString(),entity_ids:[...new Set(roles.map(r=>this.mapping[r]))],include_start_time_state:true,minimal_response:true,no_attributes:true,significant_changes_only:false});
-   const history=this.normalizeHistory(result);
-   for(const [key,series] of Object.entries(sets)) this.draw(key,series,history);
-  } catch(e){this.shadowRoot.querySelectorAll(".plot").forEach(p=>p.innerHTML='<div class="empty">Keine Historie verfügbar</div>');}
+   if(generation!==this.historyGeneration)return;
+   this.shadowRoot.querySelectorAll('[data-period-label]').forEach(el=>el.textContent=(this.historyHours||24)+' STUNDEN');this.historyWindow=historyWindow;if(this.inspectionTime!=null)this.inspectionTime=Math.max(historyWindow.start,Math.min(historyWindow.end,this.inspectionTime));const history=this.normalizeHistory(result);
+   this.chartInspectors={};for(const [key,series] of Object.entries(sets)) this.draw(key,series,history);
+   const feedback=this.shadowRoot.querySelector('[data-history-feedback]');if(feedback)feedback.textContent='Stand: '+new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:this._hass.config?.time_zone||'Europe/Berlin'}).format(end)+' · automatisch jede Minute · alle Diagramme teilen den ausgewählten Zeitpunkt.';
+  } catch(e){if(generation===this.historyGeneration){const feedback=this.shadowRoot.querySelector('[data-history-feedback]');if(feedback)feedback.textContent='Historie konnte nicht aktualisiert werden. Vorhandene Verläufe zeigen den letzten erfolgreichen Stand. Erneuter Versuch beim Öffnen oder nach einer Minute.';if(!this.historyWindow)this.shadowRoot.querySelectorAll('.plot').forEach(p=>p.innerHTML='<div class="empty">Keine Historie verfügbar</div>');}}finally{if(generation===this.historyGeneration)this.historyPending=false;}
  }
  normalizeHistory(result){if(!Array.isArray(result))return result||{};const mapped={};for(const series of result){if(!Array.isArray(series)||!series.length)continue;const id=series[0]?.entity_id||series[0]?.e;if(id)mapped[id]=series;}return mapped;}
  draw(key,series,data){
@@ -296,15 +274,23 @@ class NibeControlCard extends HTMLElement {
   const found=series.map(([r,c])=>({r,c,points:ncHistoryPoints(data[this.mapping[r]]||[],window.start,window.end),raw:ncHistoryPoints(data[this.mapping[r]]||[],window.start,window.end,{sample:false})}));
   const nums=found.flatMap(x=>x.points.filter(p=>p.value!=null).map(p=>p.value));
   if(!nums.length){host.innerHTML='<div class="empty">Keine Messwerte im Zeitraum verfügbar</div>';return;}
-  const {min,max,span}=ncHistoryScale(nums),unit=this.unit(found.find(x=>x.points.some(p=>p.value!=null)).r);
-  host.innerHTML=`<div class="chart-unit">${esc(unit)}</div><div class="chart-frame"><div class="chart-y" aria-label="Werteachse"><span class="y-max">${fmt(max)}</span><span class="y-mid">${fmt((max+min)/2)}</span><span class="y-min">${fmt(min)}</span></div><svg viewBox="0 0 100 48" preserveAspectRatio="none" aria-label="24-Stunden-Verlauf"><g class="gridlines"><path d="M0 6H100M0 25H100M0 44H100"/></g>${found.map(x=>`<path data-series="${x.r}" d="${ncHistoryPath(x.points,window.start,window.end,min,span)}" stroke="${x.c}"/>`).join('')}</svg></div><div class="chart-time">${[0,.25,.5,.75,1].map(f=>`<small>${esc(new Intl.DateTimeFormat('de-DE',{timeZone:this._hass.config?.time_zone||'Europe/Berlin',hour:'2-digit',minute:'2-digit'}).format(new Date(window.start+f*(window.end-window.start))))}</small>`).join('')}</div><div class="chart-legend"></div><label class="chart-probe">Zeitpunkt prüfen<input type="range" min="0" max="1440" value="1440" aria-label="Zeitpunkt im 24-Stunden-Verlauf"></label><output class="chart-values" aria-live="polite"></output><div class="axis"><small>vor 24 h</small><small>jetzt</small></div>`;
-  const output=host.querySelector('output'),slider=host.querySelector('input');
-  const inspect=()=>{const time=window.start+Number(slider.value)/1440*(window.end-window.start);const stamp=new Intl.DateTimeFormat('de-DE',{timeZone:this._hass.config?.time_zone||'Europe/Berlin',hour:'2-digit',minute:'2-digit'}).format(new Date(time));output.textContent=stamp+' · '+found.map(x=>{const value=ncHistoryValue(x.raw,time);return PROFILE[x.r].l+': '+(value!=null?fmt(value)+' '+this.unit(x.r):'Keine Daten');}).join(' · ');};
-  slider.oninput=inspect;inspect();
-  host.querySelector('svg').onclick=e=>{const rect=e.currentTarget.getBoundingClientRect();slider.value=String(Math.round(Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width))*1440));inspect();};
-  const legend=host.querySelector('.chart-legend');for(const x of found){const button=document.createElement('button');button.type='button';button.dataset.toggle=x.r;button.setAttribute('aria-pressed','true');button.style.setProperty('--c',x.c);button.textContent=PROFILE[x.r].l+(x.points.some(p=>p.value!=null)?'':' · Keine Historie');button.disabled=!x.points.some(p=>p.value!=null);button.onclick=()=>{const visible=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(visible));host.querySelector(`[data-series="${x.r}"]`).style.display=visible?'':'none';};legend.append(button);}
+  const scale=ncHistoryScale(nums);if(['frequency','power'].includes(key)&&scale.min<0&&nums.every(n=>n>=0)){scale.min=0;scale.span=scale.max-scale.min;}const {min,max,span}=scale,unit=this.unit(found.find(x=>x.points.some(p=>p.value!=null)).r);
+  host.innerHTML=`<div class="chart-unit">${esc(unit)} · ${this.historyHours||24} Stunden</div><div class="chart-frame"><div class="chart-y" aria-label="Werteachse"><span class="y-max">${fmt(max)}</span><span class="y-mid">${fmt((max+min)/2)}</span><span class="y-min">${fmt(min)}</span></div><svg viewBox="0 0 100 48" preserveAspectRatio="none" aria-label="24-Stunden-Verlauf"><g class="gridlines"><path d="M0 6H100M0 25H100M0 44H100"/></g><line data-cursor x1="100" x2="100" y1="6" y2="44" stroke="var(--primary-text-color)" stroke-width=".3" stroke-dasharray="1 1"/>${found.map(x=>`<path data-series="${x.r}" d="${ncHistoryPath(x.points,window.start,window.end,min,span)}" stroke="${x.c}"/>`).join('')}</svg></div><div class="chart-time">${[0,.25,.5,.75,1].map(f=>`<small>${esc(new Intl.DateTimeFormat('de-DE',{timeZone:this._hass.config?.time_zone||'Europe/Berlin',hour:'2-digit',minute:'2-digit'}).format(new Date(window.start+f*(window.end-window.start))))}</small>`).join('')}</div><details class="history-stats"><summary>Auswertung des Zeitraums</summary><table><thead><tr><th>Messwert</th><th>Minimum</th><th>Maximum</th><th>Mittel</th></tr></thead><tbody>${found.map(x=>{const stat=ncHistoryStats(x.raw,window.start,window.end);return `<tr><th scope="row">${esc(PROFILE[x.r].l)}</th><td>${stat.min==null?'—':fmt(stat.min)}</td><td>${stat.max==null?'—':fmt(stat.max)}</td><td>${stat.mean==null?'—':fmt(stat.mean)}</td></tr><tr><td colspan="4">${esc(this.unit(x.r))} · Datenabdeckung ${fmt(stat.coverage*100,0)} %${key==='frequency'?' · Laufzeit '+fmt(stat.runningHours)+' h · '+stat.starts+' beobachtete Starts':''}</td></tr>`;}).join('')}</tbody></table><p class="hint">Mittelwerte sind zeitgewichtet; unbekannte Abschnitte werden ausgeschlossen. Starts zählen nur belegte Wechsel von 0 auf eine positive Frequenz.</p></details><div class="chart-legend"></div><label class="chart-probe">Zeitpunkt prüfen<input type="range" min="0" max="1440" value="1440" aria-label="Zeitpunkt im 24-Stunden-Verlauf"></label><div class="chart-values" role="status" aria-live="polite"></div><div class="axis"><small>vor ${this.historyHours||24} h</small><small>jetzt</small></div>`;
+  const output=host.querySelector('.chart-values'),slider=host.querySelector('input'),cursor=host.querySelector('[data-cursor]');
+  this.chartInspectors=this.chartInspectors||{};
+  const inspect=time=>{const fraction=Math.max(0,Math.min(1,(time-window.start)/(window.end-window.start)));slider.value=String(Math.round(fraction*1440));const x=(fraction*100).toFixed(2);cursor?.setAttribute('x1',x);cursor?.setAttribute('x2',x);
+   const stamp=new Intl.DateTimeFormat('de-DE',{timeZone:this._hass.config?.time_zone||'Europe/Berlin',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date(time));
+   output.innerHTML=`<b>Messwerte am ${esc(stamp)}</b><table class="sample-table"><tbody>${found.map(x=>{const v=ncHistoryValue(x.raw,time);return `<tr><th scope="row"><i style="background:${x.c}" aria-hidden="true"></i>${esc(PROFILE[x.r].l)}</th><td>${v!=null?fmt(v)+' '+esc(this.unit(x.r)):'Keine Daten'}</td></tr>`;}).join('')}</tbody></table>${key==='heating'?(()=>{const supply=found.find(x=>x.r==='supply'),target=found.find(x=>x.r==='supplyTarget'),a=supply&&ncHistoryValue(supply.raw,time),b=target&&ncHistoryValue(target.raw,time);return a!=null&&b!=null?`<p class="hint">Vorlauf Ist − Soll: ${fmt(a-b)} ${esc(unit)}</p>`:'';})():key==='frequency'?`<p class="hint">${ncHistoryValue(found[0].raw,time)==null?'Betrieb nicht verfügbar':ncHistoryValue(found[0].raw,time)>0?'Verdichter läuft':'Verdichter steht'}</p>`:''}`;
+  };
+  this.chartInspectors[key]=inspect;inspect(this.inspectionTime??window.end);
+  const selectTime=()=>this.inspectTime(window.start+Number(slider.value)/1440*(window.end-window.start));slider.oninput=selectTime;
+  host.querySelector('svg').onclick=e=>{const rect=e.currentTarget.getBoundingClientRect();slider.value=String(Math.round(Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width))*1440));selectTime();};
+  const latest=document.createElement('button');latest.type='button';latest.className='history-latest';latest.textContent='Jetzt anzeigen';latest.onclick=()=>{this.inspectionTime=null;this.inspectTime(window.end,true);};host.querySelector('.chart-probe').append(latest);
+  const legend=host.querySelector('.chart-legend');for(const x of found){const button=document.createElement('button');button.type='button';button.dataset.toggle=x.r;const hidden=this.hiddenSeries?.[key]?.has(x.r)||false;button.setAttribute('aria-pressed',String(!hidden));if(hidden)host.querySelector(`[data-series="${x.r}"]`).style.display='none';button.style.setProperty('--c',x.c);button.textContent=PROFILE[x.r].l+(x.points.some(p=>p.value!=null)?'':' · Keine Historie');button.disabled=!x.points.some(p=>p.value!=null);button.onclick=()=>{const visible=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(visible));this.hiddenSeries=this.hiddenSeries||{};this.hiddenSeries[key]=this.hiddenSeries[key]||new Set();if(visible)this.hiddenSeries[key].delete(x.r);else this.hiddenSeries[key].add(x.r);host.querySelector(`[data-series="${x.r}"]`).style.display=visible?'':'none';};legend.append(button);}
  }
+ inspectTime(time,live=false){this.inspectionTime=live?null:time;for(const inspect of Object.values(this.chartInspectors||{}))inspect(time);}
  compactStyles(){return `
+ .sample-table,.history-stats table{width:100%;border-collapse:collapse;font-size:.8rem}.sample-table th,.history-stats th{font-weight:500;text-align:left}.sample-table td{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}.sample-table th,.sample-table td,.history-stats td,.history-stats th{padding:8px 4px;border-bottom:1px solid var(--nc-line)}.sample-table i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}.history-stats{font-size:.75rem;overflow:auto}.history-stats td{text-align:right}.history-stats td[colspan]{text-align:left;color:var(--secondary-text-color);font-size:.7rem}.history-latest{min-height:44px;border:1px solid var(--nc-line);border-radius:8px;background:var(--card-background-color);color:var(--primary-text-color);cursor:pointer;padding:8px 12px}.history-latest:hover{background:var(--nc-card)}.chart-values{padding:10px;border:1px solid var(--nc-line);border-radius:10px;background:var(--nc-surface)}.chart-probe{display:block!important}.plot .chart-y span:before{display:none}.plot .chart-y span{margin:0}.plot svg{cursor:crosshair}
  .panel,.plant{padding:14px;border-radius:16px}.overview-grid{grid-template-columns:1fr 1fr;margin-top:10px;gap:10px}.climate-panel,.water-panel,.energy-board{min-height:0}.energy-board{grid-column:1/-1}.climate-values{display:flex;gap:24px;justify-content:space-between}.climate-values>span{font-size:.75rem;color:var(--secondary-text-color)}.climate-values b{display:block;font-size:1.3rem;color:var(--primary-text-color);font-variant-numeric:tabular-nums;margin-top:3px}.technical-details{margin-top:10px;font-size:.75rem;color:var(--secondary-text-color)}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px}summary:hover{color:var(--primary-text-color)}summary:focus-visible{outline:3px solid var(--nc-focus);outline-offset:2px}.technical-details summary{min-height:36px}.technical-details summary:before,.water-panel>summary:before{content:'＋';font-size:1rem}details[open]>summary:before{content:'−'}.water-panel>summary{font-weight:650;font-size:.85rem}.water-panel .title{margin-top:8px}.energy-head h2{font-size:1.4rem}.energy-flow{margin-top:10px}.energy-node{padding:8px}.energy-node ha-icon{display:none}.energy-node span{white-space:normal}.energy-explanation{margin-top:8px}.plant-core{margin-bottom:0}.outside-value{display:none}.distribution{height:22px;display:grid;grid-template-columns:1fr 1fr;max-width:760px;margin:auto;border-top:2px solid var(--nc-line)}.distribution i{width:2px;background:var(--nc-line);justify-self:center}.distribution i.is-active{background:var(--nc-teal)}.destinations{margin-top:0}.plant-heading{margin-bottom:12px}.plant-note{text-align:left;min-height:0;margin-top:0}.metric-row{gap:6px}.metric{padding:9px}.chart-grid{grid-template-columns:1fr 1fr}.chart:first-child{grid-row:auto}.chart-head h3{font-size:1rem}.plot{position:relative;padding-top:8px;min-height:200px}.chart-unit{font-size:.72rem;color:var(--secondary-text-color);margin-bottom:4px}.chart-frame{display:grid;grid-template-columns:48px minmax(0,1fr);gap:6px}.chart-y{position:relative;height:145px;font-size:.7rem;color:var(--secondary-text-color);font-variant-numeric:tabular-nums}.chart-y span{position:absolute;right:0;transform:translateY(-50%)}.y-max{top:12.5%}.y-mid{top:52.0833%}.y-min{top:91.6667%}.chart-time{display:flex;justify-content:space-between;margin:4px 0 8px 54px;font-size:.65rem;color:var(--secondary-text-color)}.plot .chart-frame svg{display:block;height:145px}.chart-legend{margin-left:54px}.chart-legend{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.chart-legend button{min-height:44px;border:1px solid var(--nc-line);border-radius:8px;background:var(--card-background-color);color:var(--primary-text-color);padding:6px 8px;cursor:pointer;font-size:.72rem}.chart-legend button:before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:6px}.chart-legend button[aria-pressed=false]{opacity:.55}.chart-legend button:disabled{cursor:default;opacity:.55}.chart-legend button:hover:enabled{background:var(--nc-card)}.chart-probe{display:block;font-size:.72rem;margin:8px 0}.chart-probe input{display:block;width:100%;min-height:32px;accent-color:var(--nc-teal)}.chart-values{display:block;font-size:.72rem;min-height:32px;line-height:1.5}.axis{font-size:.7rem;color:var(--secondary-text-color);margin-top:8px}.diagnostic-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--nc-line);font-size:.82rem}.diagnostic-row small{grid-column:1/-1;color:var(--secondary-text-color)}.diagnostic-row b{font-variant-numeric:tabular-nums}.setup li{display:block;padding:10px 0}.setup li em{display:block!important;font-style:normal;margin-top:4px;font-size:.75rem}.setup li .technical-details{margin-top:0}.vent-flow{grid-template-columns:1fr!important;gap:8px;margin:14px 0}.vent-exchanger{padding:10px;flex-direction:row;flex-wrap:wrap;justify-content:center}.vent-exchanger small{width:100%}.vent-exchanger ha-icon{--mdc-icon-size:24px}.vent-lane{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:.75rem}.vent-lane i{grid-column:1/-1;grid-row:2;margin:0}.vent-lane b{font-size:.82rem}.vent-maintenance{margin-top:10px;padding-top:12px}.vent-maintenance b{display:block;margin:8px 0;font-size:1rem}.plant-choices button{padding:12px}.plant-choices strong{margin-top:2px}.app{padding-bottom:24px}nav{position:static!important}.energy-board:after{display:none}@media(max-width:600px){.overview-grid,.chart-grid{grid-template-columns:1fr}.climate-values{justify-content:flex-start;gap:36px}.vent-lane{grid-template-columns:1fr}.vent-lane b{grid-row:2}.vent-lane i{grid-row:3}.vent-heading{flex-direction:row;flex-wrap:wrap}.title h2{font-size:1.35rem}.plant-choices button{gap:4px}.plant-choices small{display:none}.plant-choices span{font-size:.7rem}.plant-heading small{display:none}.plant-heading b{text-align:left;max-width:none}.vent-maintenance{gap:8px}}
  `;}
  plantStyles(){return `
@@ -408,7 +394,7 @@ class NibeControlCard extends HTMLElement {
 
 class NibeControlStrategy extends HTMLElement {
  static getCreateSuggestions(){return {title:"NIBE Control",icon:"mdi:heat-pump-outline"};}
- static async generate(config){return {title:config.title||"NIBE Control",views:[{title:"Anlage",path:"anlage",icon:"mdi:heat-pump-outline",type:"panel",cards:[{type:"custom:nibe-control-card",mappings:config.mappings||{},ventilation:config.ventilation||{}}]}]};}
+ static async generate(config){return {title:config.title||"NIBE Control",views:[{title:"Anlage",path:"anlage",icon:"mdi:heat-pump-outline",type:"panel",cards:[{type:"custom:nibe-control-card",mappings:config.mappings||{},ventilation:config.ventilation||{},config_entry_id:config.config_entry_id||null}]}]};}
 }
 
 if(!customElements.get("nibe-control-card")) customElements.define("nibe-control-card",NibeControlCard);
