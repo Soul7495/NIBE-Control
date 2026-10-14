@@ -48,3 +48,14 @@ Gemeinsamer Zeitcursor in allen vier Diagrammen. Messwerte in benannten Tabellen
 
 ## Video-Review 0.9.1
 Android-Aufnahme als reale Layoutreferenz: doppelte EVCC-Moduszeile entfernen, bekannte Texte deutsch, redundante Soll-Tags vermeiden. Historien-Disclosure bleibt bei Minutenrefresh offen.
+
+## Community-Einrichtung 0.10
+Drei beschriftete Schritte in der bestehenden Einstellungsansicht: Anlage, Messwerte, sichtbare Bereiche. Native Modell-/Bereichsauswahl; Entity-Eingaben nutzen eine gemeinsame durchsuchbare Datalist mit HA-Namen und IDs. Bestehende Farben, Themevariablen, Schrift und 44-px-Bedienflächen bleiben erhalten. Messwerte sind nach Funktion aufklappbar; kein 800-Entity-Debugraster. Das Anlagenbild bleibt die Signatur der Übersicht. Der Einrichtungseinstieg ist auch bei ausgeblendeter Lüftung erreichbar.
+
+### Abgleich 0.10
+| Bisherige Regel | Änderung | Entscheidung |
+|---|---|---|
+| Zwei Anlagenkacheln | Lüftung nur bei Daten und ohne manuelles Ausblenden | Gewünschte Community-Variante |
+| Raum aus Climate | Auch frei gewählter Temperatursensor | Nutzerwunsch, gleiche visuelle Anzeige |
+| Sitzungsbezogene Zuordnung | Speichern in Dashboard-Strategie | Dauerhafte gemeinsame Einrichtung |
+| ERS-Modelltext | Nur bei eindeutig erkanntem ERS-Modell | Keine erfundenen Gerätebezeichnungen |

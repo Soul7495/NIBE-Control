@@ -31,6 +31,15 @@
 - Realer HA- und Zielgeräte-Test steht noch aus.
 
 # Changelog
+
+## 0.10.0
+- Community-Einrichtungsassistent mit Profil-, Installations- und manueller Entity-Auswahl direkt im Dashboard.
+- Dauerhafte Dashboard-Speicherung mit Rückprüfung, Konflikterkennung und klaren Fehlerzuständen.
+- Raumtemperatur auch aus frei gewähltem Temperatursensor; W/°F werden konsistent normiert.
+- Optionale Warmwasser-/Lüftungs-/EVCC-Bereiche automatisch oder manuell ausgeblendet.
+- Weitere registergeprüfte S-Serie-Profile und generisches manuelles Profil; keine geratenen Prioritätscodes.
+- Bestehende Filterwartung, Historie und Schreib-Allowlist bleiben erhalten.
+
 ## 0.5.0
 - neues Geräteschema mit erkennbarer Außen- und Inneneinheit und festen Leitungsanschlüssen
 - Heizkreis und Warmwasser auch auf Smartphone und Wall Display dauerhaft sichtbar

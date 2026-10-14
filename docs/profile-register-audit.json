@@ -1,0 +1,509 @@
+{
+  "checked": "2026-10-14",
+  "method": "Only unique exact title and unit matches against vvms320_vvms325.json; register data, not a hardware validation",
+  "profiles": {
+    "s1155_s1255": {
+      "30002": {
+        "register": "30002",
+        "title": "Current outdoor temperature (BT1)",
+        "unit": "°C"
+      },
+      "30006": {
+        "register": "30006",
+        "title": "Supply line (BT2)",
+        "unit": "°C"
+      },
+      "30008": {
+        "register": "30008",
+        "title": "Return line (BT3)",
+        "unit": "°C"
+      },
+      "30009": {
+        "register": "30009",
+        "title": "Hot water top (BT7)",
+        "unit": "°C"
+      },
+      "30010": {
+        "register": "30010",
+        "title": "Hot water charging (BT6)",
+        "unit": "°C"
+      },
+      "30136": {
+        "register": "30136",
+        "title": "Fan speed (AZ30-GQ2)",
+        "unit": "%"
+      },
+      "30137": {
+        "register": "30137",
+        "title": "Fan speed (AZ30-GQ3)",
+        "unit": "%"
+      },
+      "30407": {
+        "register": "30407",
+        "title": "Generated power heating (EB101)",
+        "unit": "kW"
+      },
+      "31018": {
+        "register": "31018",
+        "title": "Calculated supply climate system 1",
+        "unit": "°C"
+      },
+      "31028": {
+        "register": "31028",
+        "title": "Power internal additional heat",
+        "unit": "kW"
+      },
+      "31038": {
+        "register": "31038",
+        "title": "Fan mode 1",
+        "unit": "%"
+      },
+      "31079": {
+        "register": "31079",
+        "title": "More hot water status",
+        "unit": null
+      },
+      "31806": {
+        "register": "31806",
+        "title": "Defrosting (EB101)",
+        "unit": null
+      },
+      "31807": {
+        "register": "31807",
+        "title": "Power (EB101-EP14)",
+        "unit": "kW"
+      },
+      "31912": {
+        "register": "31912",
+        "title": "Operating mode (SG Ready)",
+        "unit": null
+      },
+      "31913": {
+        "register": "31913",
+        "title": "SG ready, input A",
+        "unit": null
+      },
+      "31914": {
+        "register": "31914",
+        "title": "SG ready, input B",
+        "unit": null
+      },
+      "31976": {
+        "register": "31976",
+        "title": "Alarm number",
+        "unit": null
+      },
+      "32306": {
+        "register": "32306",
+        "title": "Energy log - Current power consumption",
+        "unit": "kW"
+      },
+      "40012": {
+        "register": "40012",
+        "title": "Degree minutes (32 bit)",
+        "unit": "DM"
+      },
+      "40203": {
+        "register": "40203",
+        "title": "Use room sensor climate system 1",
+        "unit": null
+      },
+      "40207": {
+        "register": "40207",
+        "title": "Room sensor set point value climate system 1",
+        "unit": "°C"
+      }
+    },
+    "s1156_s1256": {
+      "30002": {
+        "register": "30002",
+        "title": "Current outdoor temperature (BT1)",
+        "unit": "°C"
+      },
+      "30006": {
+        "register": "30006",
+        "title": "Supply line (BT2)",
+        "unit": "°C"
+      },
+      "30008": {
+        "register": "30008",
+        "title": "Return line (BT3)",
+        "unit": "°C"
+      },
+      "30009": {
+        "register": "30009",
+        "title": "Hot water top (BT7)",
+        "unit": "°C"
+      },
+      "30010": {
+        "register": "30010",
+        "title": "Hot water charging (BT6)",
+        "unit": "°C"
+      },
+      "30136": {
+        "register": "30136",
+        "title": "Fan speed (AZ30-GQ2)",
+        "unit": "%"
+      },
+      "30137": {
+        "register": "30137",
+        "title": "Fan speed (AZ30-GQ3)",
+        "unit": "%"
+      },
+      "30407": {
+        "register": "30407",
+        "title": "Generated power heating (EB101)",
+        "unit": "kW"
+      },
+      "31018": {
+        "register": "31018",
+        "title": "Calculated supply climate system 1",
+        "unit": "°C"
+      },
+      "31028": {
+        "register": "31028",
+        "title": "Power internal additional heat",
+        "unit": "kW"
+      },
+      "31038": {
+        "register": "31038",
+        "title": "Fan mode 1",
+        "unit": "%"
+      },
+      "31039": {
+        "register": "31039",
+        "title": "Current hot water mode without SPA/SC",
+        "unit": null
+      },
+      "31079": {
+        "register": "31079",
+        "title": "More hot water status",
+        "unit": null
+      },
+      "31806": {
+        "register": "31806",
+        "title": "Defrosting (EB101)",
+        "unit": null
+      },
+      "31807": {
+        "register": "31807",
+        "title": "Power (EB101-EP14)",
+        "unit": "kW"
+      },
+      "31912": {
+        "register": "31912",
+        "title": "Operating mode (SG Ready)",
+        "unit": null
+      },
+      "31913": {
+        "register": "31913",
+        "title": "SG ready, input A",
+        "unit": null
+      },
+      "31914": {
+        "register": "31914",
+        "title": "SG ready, input B",
+        "unit": null
+      },
+      "31976": {
+        "register": "31976",
+        "title": "Alarm number",
+        "unit": null
+      },
+      "32197": {
+        "register": "32197",
+        "title": "Diverter valve hot water (QN10)",
+        "unit": null
+      },
+      "32306": {
+        "register": "32306",
+        "title": "Energy log - Current power consumption",
+        "unit": "kW"
+      },
+      "40012": {
+        "register": "40012",
+        "title": "Degree minutes (32 bit)",
+        "unit": "DM"
+      },
+      "40203": {
+        "register": "40203",
+        "title": "Use room sensor climate system 1",
+        "unit": null
+      },
+      "40207": {
+        "register": "40207",
+        "title": "Room sensor set point value climate system 1",
+        "unit": "°C"
+      }
+    },
+    "s320_s325": {
+      "30002": {
+        "register": "30002",
+        "title": "Current outdoor temperature (BT1)",
+        "unit": "°C"
+      },
+      "30006": {
+        "register": "30006",
+        "title": "Supply line (BT2)",
+        "unit": "°C"
+      },
+      "30008": {
+        "register": "30008",
+        "title": "Return line (BT3)",
+        "unit": "°C"
+      },
+      "30009": {
+        "register": "30009",
+        "title": "Hot water top (BT7)",
+        "unit": "°C"
+      },
+      "30010": {
+        "register": "30010",
+        "title": "Hot water charging (BT6)",
+        "unit": "°C"
+      },
+      "30136": {
+        "register": "30136",
+        "title": "Fan speed (AZ30-GQ2)",
+        "unit": "%"
+      },
+      "30137": {
+        "register": "30137",
+        "title": "Fan speed (AZ30-GQ3)",
+        "unit": "%"
+      },
+      "31018": {
+        "register": "31018",
+        "title": "Calculated supply climate system 1",
+        "unit": "°C"
+      },
+      "31028": {
+        "register": "31028",
+        "title": "Power internal additional heat",
+        "unit": "kW"
+      },
+      "31029": {
+        "register": "31029",
+        "title": "Priority",
+        "unit": null
+      },
+      "31038": {
+        "register": "31038",
+        "title": "Fan mode 1",
+        "unit": "%"
+      },
+      "31079": {
+        "register": "31079",
+        "title": "More hot water status",
+        "unit": null
+      },
+      "31476": {
+        "register": "31476",
+        "title": "Return line (EB101-BT3)",
+        "unit": "°C"
+      },
+      "31804": {
+        "register": "31804",
+        "title": "Current compressor frequency (EB101)",
+        "unit": "Hz"
+      },
+      "31806": {
+        "register": "31806",
+        "title": "Defrosting (EB101)",
+        "unit": null
+      },
+      "31807": {
+        "register": "31807",
+        "title": "Power (EB101-EP14)",
+        "unit": "kW"
+      },
+      "31855": {
+        "register": "31855",
+        "title": "Requested compressor frequency (EB101)",
+        "unit": "Hz"
+      },
+      "31912": {
+        "register": "31912",
+        "title": "Operating mode (SG Ready)",
+        "unit": null
+      },
+      "31913": {
+        "register": "31913",
+        "title": "SG ready, input A",
+        "unit": null
+      },
+      "31914": {
+        "register": "31914",
+        "title": "SG ready, input B",
+        "unit": null
+      },
+      "31976": {
+        "register": "31976",
+        "title": "Alarm number",
+        "unit": null
+      },
+      "32306": {
+        "register": "32306",
+        "title": "Energy log - Current power consumption",
+        "unit": "kW"
+      },
+      "40012": {
+        "register": "40012",
+        "title": "Degree minutes (32 bit)",
+        "unit": "DM"
+      },
+      "40203": {
+        "register": "40203",
+        "title": "Use room sensor climate system 1",
+        "unit": null
+      },
+      "40207": {
+        "register": "40207",
+        "title": "Room sensor set point value climate system 1",
+        "unit": "°C"
+      }
+    },
+    "s2125": {
+      "30002": {
+        "register": "30002",
+        "title": "Current outdoor temperature (BT1)",
+        "unit": "°C"
+      },
+      "30006": {
+        "register": "30006",
+        "title": "Supply line (BT2)",
+        "unit": "°C"
+      },
+      "30008": {
+        "register": "30008",
+        "title": "Return line (BT3)",
+        "unit": "°C"
+      },
+      "30009": {
+        "register": "30009",
+        "title": "Hot water top (BT7)",
+        "unit": "°C"
+      },
+      "30010": {
+        "register": "30010",
+        "title": "Hot water charging (BT6)",
+        "unit": "°C"
+      },
+      "30136": {
+        "register": "30136",
+        "title": "Fan speed (AZ30-GQ2)",
+        "unit": "%"
+      },
+      "30137": {
+        "register": "30137",
+        "title": "Fan speed (AZ30-GQ3)",
+        "unit": "%"
+      },
+      "30407": {
+        "register": "30407",
+        "title": "Generated power heating (EB101)",
+        "unit": "kW"
+      },
+      "31018": {
+        "register": "31018",
+        "title": "Calculated supply climate system 1",
+        "unit": "°C"
+      },
+      "31028": {
+        "register": "31028",
+        "title": "Power internal additional heat",
+        "unit": "kW"
+      },
+      "31038": {
+        "register": "31038",
+        "title": "Fan mode 1",
+        "unit": "%"
+      },
+      "31079": {
+        "register": "31079",
+        "title": "More hot water status",
+        "unit": null
+      },
+      "31476": {
+        "register": "31476",
+        "title": "Return line (EB101-BT3)",
+        "unit": "°C"
+      },
+      "31479": {
+        "register": "31479",
+        "title": "Condenser sensor supply line (EB101-BT12)",
+        "unit": "°C"
+      },
+      "31485": {
+        "register": "31485",
+        "title": "Compressor status (EB101)",
+        "unit": null
+      },
+      "31804": {
+        "register": "31804",
+        "title": "Current compressor frequency (EB101)",
+        "unit": "Hz"
+      },
+      "31806": {
+        "register": "31806",
+        "title": "Defrosting (EB101)",
+        "unit": null
+      },
+      "31807": {
+        "register": "31807",
+        "title": "Power (EB101-EP14)",
+        "unit": "kW"
+      },
+      "31855": {
+        "register": "31855",
+        "title": "Requested compressor frequency (EB101)",
+        "unit": "Hz"
+      },
+      "31912": {
+        "register": "31912",
+        "title": "Operating mode (SG Ready)",
+        "unit": null
+      },
+      "31913": {
+        "register": "31913",
+        "title": "SG ready, input A",
+        "unit": null
+      },
+      "31914": {
+        "register": "31914",
+        "title": "SG ready, input B",
+        "unit": null
+      },
+      "31976": {
+        "register": "31976",
+        "title": "Alarm number",
+        "unit": null
+      },
+      "32197": {
+        "register": "32197",
+        "title": "Diverter valve hot water (QN10)",
+        "unit": null
+      },
+      "32306": {
+        "register": "32306",
+        "title": "Energy log - Current power consumption",
+        "unit": "kW"
+      },
+      "40012": {
+        "register": "40012",
+        "title": "Degree minutes (32 bit)",
+        "unit": "DM"
+      },
+      "40203": {
+        "register": "40203",
+        "title": "Use room sensor climate system 1",
+        "unit": null
+      },
+      "40207": {
+        "register": "40207",
+        "title": "Room sensor set point value climate system 1",
+        "unit": "°C"
+      }
+    }
+  }
+}

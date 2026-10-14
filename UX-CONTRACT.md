@@ -3,6 +3,7 @@
 ## Canonical UI Map
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
+| Form | setupDraft / previewSetup / saveSetup | Dashboard-Strategie | Einrichtung / Korrektur | tests/settings.test.mjs |
 | Navigation | interne Tab-Leiste | `src/nibe-control.js` | Übersicht / Verläufe / Datencheck / Diagnose | Tastatur + schmaler Viewport |
 | Raumtemperatur | Climate-Entity `current_temperature` | `src/profile.js` | Anzeige; Sollwert lokal nicht bedienbar | Unit-Test + HA-Livetest |
 | Select/Listbox | native Select-Auswahl | `water_heater.operation_list` | nur bei angebotenen Modi | Tastatur + HA-Livetest |
@@ -60,3 +61,22 @@ Warmwasser-/EVCC-Steueroptionen werden live synchronisiert, ohne laufende Überm
 
 ## Aliasauflösung 0.9.1
 Mehrere Registertreffer werden nur dann als Sensor-/Number-Aliase behandelt, wenn unique_id und nichtleere device_id identisch sind, innerhalb der bereits ausgewählten NIBE-config_entry. Aktive Aliase haben Vorrang vor deaktivierten, danach der kanonische Domain-Typ. Echte Konflikte bleiben ungelöst. Schreiben auf Gradminuten bleibt ausgeschlossen. Die SG-Code-Tabelle aus yozik04/nibe extensions.json ist für S1155/S1255 begrenzt und wird nicht für VVM S320 genutzt.
+
+## Community-Einrichtung 0.10 — ersetzt Sitzungsvariante aus 0.9
+| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
+|---|---|---|---|---|
+| Form | setupDraft / previewSetup / saveSetup | Dashboard-Strategie | Ersteinrichtung / spätere Korrektur | tests/settings.test.mjs |
+| Entity-Auswahl | Native Input + gemeinsame Datalist | Registry und hass.states | manuell / automatisch / nicht verwenden | Domain-/Einheitentests |
+| Geräteprofile | DEVICE_PROFILES / deviceProfile | src/profile.js; upstream Registertabellen | automatisch / manuell / generisch | Discovery-Tests, Registeraudit |
+| Sichtbare Bereiche | capabilityState / applyVisibility | vorhandene Zuordnung + visibility | automatisch / manuell verborgen | fehlend/deaktiviert/unavailable Tests |
+
+- Alle Eingaben sind zunächst Entwurf; nur „Einrichtung speichern“ schreibt Dashboard-Konfiguration. Keine Änderung beim Auswählen/Tippen. Keine Wärmepumpenservices während der Einrichtung.
+- Speichern besitzt Duplikatschutz, Pending-Status, serverbestätigte Rückprüfung, Erhalt der Eingaben bei Fehler, erste fehlerhafte Entity im Fokus. Bestehende Filterkonfiguration und fremde Dashboard-Metadaten bleiben erhalten.
+- HA-API: `src/data/lovelace/config/types.ts` im offiziellen Frontend: `lovelace/config` mit `force`, `url_path`; `lovelace/config/save` mit `config`, `url_path`. Vor der Mutation wird die aktuelle Rohkonfiguration gelesen. Nur NIBE-Dashboardstrategien werden gespeichert. YAML-/Rechtefehler blockieren und zeigen Handlungshinweis.
+- Browserroute bestimmt die Dashboardadresse (erster Pfadabschnitt, lovelace → null); explizites dashboard_url_path ist bei direkter Kartenintegration möglich. Eine fremde Strategie wird niemals ersetzt.
+- Konfliktprüfung vergleicht die vorher geladene Einrichtung mit dem aktuellen Serverstand. HA bietet hier keine CAS-Version; Änderungen zwischen Lesen und Schreiben können nicht atomar ausgeschlossen werden.
+- Vorschläge basieren auf gewählter Installation und Profil. Mehrdeutigkeiten bleiben offen. Explizites null entfernt eine Rolle; leere Eingabe kehrt zu automatisch zurück. Nicht bekannte Mapping-Schlüssel bleiben erhalten.
+- Raumtemperatur: climate.current_temperature oder sensor.state. Auswahl prüft Domains und physische Einheiten; W wird für Leistung nach kW, °F für Temperaturen nach °C normiert, auch im Verlauf.
+- Weitere Geräteprofile sind nur anhand eindeutiger Titel/Einheiten in der NIBE-Bibliothek registergeprüft. Fehlende Rollen benötigen manuelle Zuordnung. Keine pauschale Hardwarefreigabe. Generische/weitere Profile verwenden keine numerische VVM-Prioritätsübersetzung.
+- Warmwasser/Lüftung/EVCC: vorhandene registrierte Entities zählen auch bei deaktiviert/unavailable als erkannte Funktion; fehlende Funktionen sind verborgen. Manuell ausgeblendete Funktionen bleiben im Assistenten mit Status erkennbar. SG Ready bleibt unabhängig von EVCC sichtbar.
+- Native Datalist akzeptiert plattformeigene Popup-Geometrie und Tastaturbedienung; Beschriftung, Validierung und Rückmeldung gehören der Anwendung. Pending sperrt alle Fieldsets. Entwürfe bleiben während Liveupdates bestehen, werden nicht lokal dauerhaft gespeichert.

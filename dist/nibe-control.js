@@ -1,4 +1,4 @@
-/* NIBE Control 0.9.1 — local Home Assistant dashboard */
+/* NIBE Control 0.10.0 — local Home Assistant dashboard */
 // Register 31029: yozik04/nibe, vvms320_vvms325.json / extensions.json.
 // SG contacts: NIBE VVM S320 installer manual 531158-2, AUX / SG Ready.
 const NC_INVALID = new Set(['unknown','unavailable','none','null','']);
@@ -157,27 +157,28 @@ function registerFromUniqueId(uniqueId = "") {
   return String(uniqueId).match(/-(\d{5})$/)?.[1];
 }
 
-function resolveDiscovery(registry=[],overrides={},entryId=null){
+function resolveDiscovery(registry=[],overrides={},entryId=null,profile=DEVICE_PROFILE){
  const rows=registry.filter(r=>r.platform==='nibe_heatpump'||(!r.platform&&registerFromUniqueId(r.unique_id)));
  const entries=[...new Set(rows.map(r=>r.config_entry_id).filter(Boolean))];
  const selected=entryId||(entries.length===1?entries[0]:null),ambiguous=[];
  const scope=rows.filter(r=>selected?r.config_entry_id===selected:entries.length===0);
  const mapping={};
- for(const [role,spec] of Object.entries(DEVICE_PROFILE.roles)){
-  if(overrides[role]){mapping[role]=overrides[role];continue;}
+ for(const [role,spec] of Object.entries(profile.roles)){
+  if(Object.hasOwn(overrides,role)){mapping[role]=overrides[role]||null;continue;}
+  if(!spec.entity&&!spec.register){mapping[role]=null;continue;}
   if(spec.register){const matches=scope.filter(r=>registerFromUniqueId(r.unique_id)===spec.register);let candidate=matches.length===1?matches[0]:null;
    // Sensor/number aliases are safe only with identical registry identity and device.
    if(matches.length>1&&matches[0].device_id&&matches.every(r=>r.unique_id===matches[0].unique_id&&r.device_id===matches[0].device_id)){
     const enabled=matches.filter(r=>!r.disabled_by),pool=enabled.length?enabled:matches,domain=spec.entity.split('.')[0],preferred=pool.filter(r=>r.entity_id.startsWith(domain+'.'));
     if(preferred.length===1)candidate=preferred[0];else if(pool.length===1)candidate=pool[0];
    }
-   if(candidate)mapping[role]=candidate.entity_id;else if(matches.length>1){mapping[role]=null;ambiguous.push(role);}else mapping[role]=entries.length?null:spec.entity;continue;}
+   if(candidate)mapping[role]=candidate.entity_id;else if(matches.length>1){mapping[role]=null;ambiguous.push(role);}else mapping[role]=entries.length||!(profile===DEVICE_PROFILE||profile.id==='vvms320')?null:spec.entity;continue;}
   if(spec.group==='optional'){mapping[role]=registry.find(r=>r.entity_id===spec.entity)?.entity_id||spec.entity;continue;}
   const domain=spec.entity.split('.')[0],matches=scope.filter(r=>r.entity_id.startsWith(domain+'.'));
   const exact=matches.find(r=>r.entity_id===spec.entity);
-  if(exact)mapping[role]=exact.entity_id;else if(matches.length===1)mapping[role]=matches[0].entity_id;else{mapping[role]=entries.length?null:spec.entity;if(matches.length>1)ambiguous.push(role);}
+  if(exact)mapping[role]=exact.entity_id;else if(matches.length===1)mapping[role]=matches[0].entity_id;else{mapping[role]=entries.length||!(profile===DEVICE_PROFILE||profile.id==='vvms320')?null:spec.entity;if(matches.length>1)ambiguous.push(role);}
  }
- if(!overrides.room)mapping.room=mapping.climate;
+ if(!Object.hasOwn(overrides,'room'))mapping.room=mapping.climate;
  return {mapping,entries,selected,ambiguous};
 }
 function resolveRoles(registry=[],overrides={},entryId=null){return resolveDiscovery(registry,overrides,entryId).mapping;}
@@ -185,7 +186,171 @@ function resolveRoles(registry=[],overrides={},entryId=null){return resolveDisco
 function usableState(state) {
   return !!state && !["unknown", "unavailable", "none", "null", ""].includes(String(state.state).toLowerCase());
 }
-const VERSION = "0.9.1";
+// Register mappings verified against yozik04/nibe JSON titles and units, 2026-10-14.
+// Only unique, exact matches are included. Hardware validation is separate.
+const REGISTER_PROFILES = {
+  "s1155_s1255": {
+    "30002": "30002",
+    "30006": "30006",
+    "30008": "30008",
+    "30009": "30009",
+    "30010": "30010",
+    "30136": "30136",
+    "30137": "30137",
+    "30407": "30407",
+    "31018": "31018",
+    "31028": "31028",
+    "31038": "31038",
+    "31079": "31079",
+    "31806": "31806",
+    "31807": "31807",
+    "31912": "31912",
+    "31913": "31913",
+    "31914": "31914",
+    "31976": "31976",
+    "32306": "32306",
+    "40012": "40012",
+    "40203": "40203",
+    "40207": "40207"
+  },
+  "s1156_s1256": {
+    "30002": "30002",
+    "30006": "30006",
+    "30008": "30008",
+    "30009": "30009",
+    "30010": "30010",
+    "30136": "30136",
+    "30137": "30137",
+    "30407": "30407",
+    "31018": "31018",
+    "31028": "31028",
+    "31038": "31038",
+    "31039": "31039",
+    "31079": "31079",
+    "31806": "31806",
+    "31807": "31807",
+    "31912": "31912",
+    "31913": "31913",
+    "31914": "31914",
+    "31976": "31976",
+    "32197": "32197",
+    "32306": "32306",
+    "40012": "40012",
+    "40203": "40203",
+    "40207": "40207"
+  },
+  "s320_s325": {
+    "30002": "30002",
+    "30006": "30006",
+    "30008": "30008",
+    "30009": "30009",
+    "30010": "30010",
+    "30136": "30136",
+    "30137": "30137",
+    "31018": "31018",
+    "31028": "31028",
+    "31029": "31029",
+    "31038": "31038",
+    "31079": "31079",
+    "31476": "31476",
+    "31804": "31804",
+    "31806": "31806",
+    "31807": "31807",
+    "31855": "31855",
+    "31912": "31912",
+    "31913": "31913",
+    "31914": "31914",
+    "31976": "31976",
+    "32306": "32306",
+    "40012": "40012",
+    "40203": "40203",
+    "40207": "40207"
+  },
+  "s2125": {
+    "30002": "30002",
+    "30006": "30006",
+    "30008": "30008",
+    "30009": "30009",
+    "30010": "30010",
+    "30136": "30136",
+    "30137": "30137",
+    "30407": "30407",
+    "31018": "31018",
+    "31028": "31028",
+    "31038": "31038",
+    "31079": "31079",
+    "31476": "31476",
+    "31479": "31479",
+    "31485": "31485",
+    "31804": "31804",
+    "31806": "31806",
+    "31807": "31807",
+    "31855": "31855",
+    "31912": "31912",
+    "31913": "31913",
+    "31914": "31914",
+    "31976": "31976",
+    "32197": "32197",
+    "32306": "32306",
+    "40012": "40012",
+    "40203": "40203",
+    "40207": "40207"
+  }
+};
+const DEVICE_PROFILES = {
+ vvms320: {...DEVICE_PROFILE, id:'vvms320', verified:'An Anlage getestet', priorityCodes:true},
+ vvms325: {...DEVICE_PROFILE, id:'vvms325', model:'VVM S325', verified:'Register geprüft · Liveprüfung erforderlich', priorityCodes:true},
+ ...Object.fromEntries([
+ ['s1155','S1155','s1155_s1255'],['s1255','S1255','s1155_s1255'],
+ ['s1156','S1156','s1156_s1256'],['s1256','S1256','s1156_s1256'],
+ ['s320','S320','s320_s325'],['s325','S325','s320_s325'],['s2125','S2125','s2125']
+ ].map(([id,model,file])=>[id,{id,model,source:file,verified:'Register geprüft · Liveprüfung erforderlich',priorityCodes:false,roles:Object.fromEntries(Object.entries(DEVICE_PROFILE.roles).map(([role,spec])=>[role,{...spec,register:spec.register?REGISTER_PROFILES[file][spec.register]:undefined,entity:spec.group==='optional'?spec.entity:spec.register?REGISTER_PROFILES[file][spec.register]?spec.entity:undefined:spec.entity}]))}])),
+ generic:{id:'generic',model:'NIBE · Individuell',verified:'Manuelle Zuordnung · Statuscodes ungeprüft',priorityCodes:false,roles:Object.fromEntries(Object.entries(DEVICE_PROFILE.roles).map(([role,spec])=>[role,{...spec,register:undefined,entity:['climate','room','waterHeater'].includes(role)?spec.entity:undefined}]))}
+};
+function detectProfile(devices=[],entryId=null){
+ const names=devices.filter(d=>!entryId||d.config_entries?.includes(entryId)).map(d=>String(d.model||'').replace(/[^a-z0-9]/gi,'').toLowerCase());
+ const found=Object.keys(DEVICE_PROFILES).filter(id=>id!=='generic'&&names.includes(id));
+ const controllers=found.filter(id=>id.startsWith('vvms'));if(controllers.length===1)return controllers[0];
+ return found.length===1?found[0]:'generic';
+}
+function deviceProfile(id,devices=[],entryId=null){
+ return DEVICE_PROFILES[id]||DEVICE_PROFILES[detectProfile(devices,entryId)];
+}
+// Community setup contract: mapping changes never create device write permissions.
+const FEATURE_ROLES = {
+ water:['hotWaterTop','hotWaterCharge','waterHeater'],
+ ventilation:['ventilationSupply','ventilationExtract'],
+ evcc:['evccEnabled','evccCharging','evccMode','evccAction']
+};
+function entityCompatible(role,id,state,spec){
+ const domain=String(id||'').split('.')[0];
+ const required={waterHeater:'water_heater',climate:'climate',evccMode:'select',evccEnabled:'binary_sensor',evccCharging:'binary_sensor'}[role];
+ if(required)return domain===required;
+ if(role==='room')return domain==='climate'||(domain==='sensor'&&['°C','°F'].includes(state?.attributes?.unit_of_measurement));
+ if(!['sensor','number','binary_sensor','switch'].includes(domain))return false;
+ const unit=state?.attributes?.unit_of_measurement;
+ if(!spec?.unit)return true;
+ if(!unit)return !state; // disabled registry entities can be selected before activation
+ if(spec.unit==='kW')return ['W','kW'].includes(unit);
+ if(spec.unit==='°C')return ['°C','°F'].includes(unit);
+ return unit.toLowerCase()===spec.unit.toLowerCase();
+}
+function capabilityState(feature,mapping,registry,states,visibility={}){
+ const roles=FEATURE_ROLES[feature]||[];
+ const detected=roles.some(r=>mapping?.[r]&&(states?.[mapping[r]]||registry?.some(e=>e.entity_id===mapping[r])));
+ const hidden=visibility[feature]==='hide';
+ return {detected,visible:detected&&!hidden,label:hidden?'Manuell ausgeblendet':detected?'Erkannt · automatisch angezeigt':'Nicht erkannt · inaktiv'};
+}
+function mergeDashboardSettings(raw,settings){
+ if(!['custom:nibe-control','nibe-control'].includes(raw?.strategy?.type))throw new Error('Dieses Dashboard verwendet keine NIBE-Control-Strategie.');
+ return {...raw,strategy:{...raw.strategy,profile:settings.profile,config_entry_id:settings.config_entry_id,mappings:{...settings.mappings},visibility:{...raw.strategy.visibility,...settings.visibility},setup_complete:true}};
+}
+function settingSnapshot(raw){
+ const s=raw?.strategy||raw||{};
+ const sort=obj=>Object.fromEntries(Object.entries(obj||{}).sort(([a],[b])=>a.localeCompare(b)));
+ return JSON.stringify({profile:s.profile||'auto',config_entry_id:s.config_entry_id||null,mappings:sort(s.mappings),visibility:sort(s.visibility),setup_complete:!!s.setup_complete});
+}
+const VERSION = "0.10.0";
 const PROFILE=Object.fromEntries(Object.entries(DEVICE_PROFILE.roles).map(([role,p])=>[role,{r:p.register,e:p.entity,a:p.attribute,l:p.label+(role==='compressorHz'?' Ist':role==='requestedHz'?' Soll':''),t:['compressorHz','requestedHz'].includes(role)?null:p.tag,u:p.unit,req:p.group==='recommended'||role==='sgA'||role==='sgB',diag:p.group==='diagnostic'||['electrical','compressorHz','compressorStatus','priority','sgMode','alarm','defrost'].includes(role),optional:p.group==='optional'}]));
 const INVALID = new Set(["unknown","unavailable","none","null",""]);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -204,7 +369,7 @@ function statusLabel(role, raw) {
 }
 
 class NibeControlCard extends HTMLElement {
- setConfig(config){ this.config=config||{}; if(!this.shadowRoot)this.attachShadow({mode:"open"}); }
+ setConfig(config){ this.config=config||{};this.settingsBaseline=settingSnapshot(this.config); if(!this.shadowRoot)this.attachShadow({mode:"open"}); }
  set hass(hass){ const first=!this._hass,reconnected=this._hass?.connected===false&&hass.connected!==false; this._hass=hass; if(first) this.init(); else{this.paintValues();if(reconnected)this.refreshRegistry().then(()=>this.loadHistory());} }
  async init(){
   try {
@@ -214,61 +379,61 @@ class NibeControlCard extends HTMLElement {
    ]);
    this.registry=entities; this.devices=devices;this.discoveryError=false;
    this.applyDiscovery();
-  } catch(e){this.registry=[];this.discoveryError=true;this.mapping=Object.fromEntries(Object.entries(PROFILE).map(([k,v])=>[k,this.config?.mappings?.[k]||v.e]));this.meta={};if(!this.config?.mappings?.room)this.mapping.room=this.mapping.climate;}
+  } catch(e){this.registry=[];this.discoveryError=true;this.applyDiscovery();}
   this.helperIds={}; this.findMaintenanceHelpers();
   this.render(); this.loadHistory();
  }
  async refreshRegistry(){
   if(this.registryPending)return;this.registryPending=true;
-  try{const rows=await this._hass.callWS({type:'config/entity_registry/list'});this.registry=rows;this.discoveryError=false;this.applyDiscovery();this.paintValues();}
+  try{const rows=await this._hass.callWS({type:'config/entity_registry/list'});this.registry=rows;this.discoveryError=false;this.applyDiscovery();this.paintValues();if(this.shadowRoot.getElementById('community-setup'))this.previewSetup();}
   catch(e){this.discoveryError=true;const message=this.shadowRoot?.querySelector('[data-discovery-error]');if(message)message.textContent='Registry nicht erreichbar. Vorhandene Zuordnung bleibt erhalten.';}
   finally{this.registryPending=false;}
  }
  applyDiscovery(){
-  const result=resolveDiscovery(this.registry,this.config?.mappings||{},this.config?.config_entry_id);const changed=JSON.stringify(this.mapping||{})!==JSON.stringify(result.mapping);if(changed){this.historyGeneration=(this.historyGeneration||0)+1;this.historyPending=false;}this.discovery=result;this.mapping=result.mapping;this.meta=Object.fromEntries(Object.entries(this.mapping).map(([r,id])=>[r,this.registry.find(e=>e.entity_id===id)]));
+  this.activeProfile=deviceProfile(this.config?.profile,this.devices||[],this.config?.config_entry_id);const result=resolveDiscovery(this.registry,this.config?.mappings||{},this.config?.config_entry_id,this.activeProfile);const changed=JSON.stringify(this.mapping||{})!==JSON.stringify(result.mapping);if(changed){this.historyGeneration=(this.historyGeneration||0)+1;this.historyPending=false;}this.discovery=result;this.mapping=result.mapping;this.meta=Object.fromEntries(Object.entries(this.mapping).map(([r,id])=>[r,this.registry.find(e=>e.entity_id===id)]));
  }
  connectedCallback(){clearInterval(this.historyTimer);this.historyTimer=setInterval(()=>{if(this._hass?.connected!==false&&this.selectedPlant==='heatpump'&&this.shadowRoot?.getElementById('charts')?.classList.contains('active')&&document.visibilityState!=='hidden')this.loadHistory();},60000);}
  disconnectedCallback(){this.historyPending=false;clearInterval(this.historyTimer);this.historyTimer=null;this.historyGeneration=(this.historyGeneration||0)+1;}
  st(role){return this._hass.states[this.mapping?.[role]];}
- val(role){const s=this.st(role), a=PROFILE[role]?.a; return a ? s?.attributes?.[a] : s?.state;}
+ val(role){const s=this.st(role), a=role==='room'?(this.mapping?.room?.startsWith('climate.')?'current_temperature':null):PROFILE[role]?.a; let v=a?s?.attributes?.[a]:s?.state;const n=ncNumber(v),u=s?.attributes?.unit_of_measurement||(role==='room'&&this.mapping?.room?.startsWith('climate.')?this._hass.config?.unit_system?.temperature:null);if(n!=null&&PROFILE[role]?.u==='kW'&&u==='W')v=n/1000;if(n!=null&&PROFILE[role]?.u==='°C'&&u==='°F')v=(n-32)*5/9;return v;}
  available(role){return valid(this.st(role))&&(!(PROFILE[role]?.a||PROFILE[role]?.u)||ncNumber(this.val(role))!=null);}
- unit(role){return this.st(role)?.attributes?.unit_of_measurement || PROFILE[role]?.u || "";}
+ unit(role){return PROFILE[role]?.u || this.st(role)?.attributes?.unit_of_measurement || "";}
  value(role,d=1){const value=this.val(role);return this.available(role)&&ncNumber(value)!=null?`${fmt(value,d)}${this.unit(role)?` ${esc(this.unit(role))}`:""}`:"—";}
  live(role,d=1){return `<span data-role="${role}" data-digits="${d}">${this.value(role,d)}</span>`;}
  stateValues(){return Object.fromEntries(['priority','compressorHz','additionalHeat','alarm','defrost','sgA','sgB','sgMode'].map(role=>[role,this.val(role)]));}
- operation(){return ncOperating(this.stateValues(),this._hass.connected!==false);}
+ operation(){const values=this.stateValues();if(this.activeProfile?.priorityCodes===false)values.priority=null;return ncOperating(values,this._hass.connected!==false);}
  operating(){const state=this.operation();return [state.mode,state.label];}
  render(){
   const [mode,label]=this.operating();
   this.shadowRoot.innerHTML=`<style>${this.styles()}</style><style>${this.responsiveStyles()}</style><style>${this.plantStyles()}</style><main class="app ${mode}">
    <header><div><div class="eyebrow">DEINE HAUSTECHNIK · V${VERSION}</div><h1>NIBE Control</h1><p class="sub">Wärmepumpe und Lüftung</p></div></header>
-   <div class="plant-choices" aria-label="Anlage auswählen"><button type="button" data-plant="heatpump" aria-pressed="false"><ha-icon icon="mdi:heat-pump-outline" aria-hidden="true"></ha-icon><b>Wärmepumpe</b><small>VVM S320 · EB101</small><span data-operation>${esc(label)}</span><strong>${this.live('room')} innen · ${this.live('hotWaterTop')} Warmwasser</strong></button><button type="button" data-plant="ventilation" aria-pressed="false"><ha-icon icon="mdi:hvac" aria-hidden="true"></ha-icon><b>Lüftung</b><small>ERS S40-400</small><span data-vent-operation></span><strong>${this.live('ventilationSupply',0)} Zuluft · ${this.live('ventilationExtract',0)} Abluft</strong><em data-filter-summary></em></button></div>
-   <p class="choice-hint" data-choice-hint>Wähle eine Anlage für Details und Einstellungen.</p>
+   <div class="plant-choices" aria-label="Anlage auswählen"><button type="button" data-plant="heatpump" aria-pressed="false"><ha-icon icon="mdi:heat-pump-outline" aria-hidden="true"></ha-icon><b>Wärmepumpe</b><small>${esc(this.activeProfile?.model||'NIBE')}</small><span data-operation>${esc(label)}</span><strong>${this.live('room')} innen <span data-feature="water">· ${this.live('hotWaterTop')} Warmwasser</span></strong></button><button type="button" data-feature="ventilation" data-plant="ventilation" aria-pressed="false"><ha-icon icon="mdi:hvac" aria-hidden="true"></ha-icon><b>Lüftung</b><small>${esc(this.ventilationModel())}</small><span data-vent-operation></span><strong>${this.live('ventilationSupply',0)} Zuluft · ${this.live('ventilationExtract',0)} Abluft</strong><em data-filter-summary></em></button></div>
+   <button type="button" data-open-settings>Einrichtung / Einstellungen</button><p class="choice-hint" data-choice-hint>Wähle eine Anlage für Details und Einstellungen.</p>
    <nav hidden aria-label="Wärmepumpenbereiche"><button class="active" data-tab="overview">Übersicht</button><button data-tab="charts">Verläufe</button><button data-tab="setup">Einstellungen</button><button data-tab="diag">Diagnose</button></nav>
    <section id="overview" class="tab active" hidden>${this.hero()}${this.overview()}</section>
    <section id="charts" class="tab" hidden>${this.charts()}</section>
    <section id="setup" class="tab" hidden>${this.setup()}</section>
    <section id="diag" class="tab" hidden>${this.diagnostics()}</section>
-   <section id="ventilation" hidden>${this.ventilation()}</section>
+   <section id="ventilation" data-feature="ventilation" hidden>${this.ventilation()}</section>
    <style>[hidden]{display:none!important}/* Hidden views override active tab display. */.plant-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.plant-choices button{display:grid;grid-template-columns:32px 1fr;gap:5px 12px;text-align:left;padding:18px;border:1px solid var(--nc-line);border-radius:18px;background:var(--card-background-color);color:var(--primary-text-color);cursor:pointer;min-width:0}.plant-choices ha-icon{grid-row:span 2;color:var(--nc-teal)}.plant-choices b{font-size:1.1rem}.plant-choices small,.plant-choices span,.plant-choices strong,.plant-choices em{grid-column:2;font-size:.78rem;overflow-wrap:anywhere}.plant-choices small,.plant-choices span{color:var(--secondary-text-color)}.plant-choices strong{font-weight:600;margin-top:6px}.plant-choices em{font-style:normal;color:var(--secondary-text-color)}.plant-choices button:hover{background:var(--nc-card)}.plant-choices button[aria-pressed=true]{border-color:var(--nc-teal);box-shadow:inset 0 0 0 1px var(--nc-teal)}.choice-hint{font-size:.85rem;color:var(--secondary-text-color);margin:24px 0}.plant-choices [data-role]{display:inline;font-size:inherit;color:inherit;grid-column:auto}@media(max-width:520px){.plant-choices{gap:8px}.plant-choices button{grid-template-columns:1fr;padding:12px;gap:6px}.plant-choices ha-icon{grid-row:auto}.plant-choices small,.plant-choices span,.plant-choices strong,.plant-choices em{grid-column:1}.plant-choices strong{font-size:.72rem}nav{position:static}}</style>
   <style>${this.compactStyles()}</style></main>`;
-  this.bind(); this.paintValues();
+  this.bind(); this.paintValues();this.applyVisibility();if(!this.config.setup_complete&&this._hass.user?.is_admin){this.selectPlant('heatpump');this.shadowRoot.querySelector('[data-tab="setup"]')?.click();}
  }
  hero(){
   return `<section class="plant" aria-label="Aktueller Anlagenbetrieb">
    <div class="plant-heading"><small>DEINE ANLAGE · LIVE</small><b data-operation>${esc(this.operation().label)}</b></div>
    <div class="plant-core">
-    <article class="machine"><div class="outdoor-unit"><div class="fan" aria-hidden="true"><b></b></div><i></i><i></i><i></i></div><strong>${this.live('compressorHz',0)}</strong><small>Außeneinheit · EB101</small><span class="outside-value">${this.live('outdoor')} außen</span></article>
+    <article class="machine"><div class="outdoor-unit"><div class="fan" aria-hidden="true"><b></b></div><i></i><i></i><i></i></div><strong>${this.live('compressorHz',0)}</strong><small>${this.activeProfile?.id?.startsWith('vvms')?'Außeneinheit · EB101':'Verdichter · schematisch'}</small><span class="outside-value">${this.live('outdoor')} außen</span></article>
     <div class="plant-link" aria-hidden="true"><div class="pipe hot"><span></span></div><div class="pipe cold"><span></span></div></div>
-    <article class="hub"><div class="indoor-unit"><span>NIBE</span><i></i><i></i></div><strong>VVM S320</strong><small>Inneneinheit</small></article>
+    <article class="hub"><div class="indoor-unit"><span>NIBE</span><i></i><i></i></div><strong>${esc(this.activeProfile?.model||'NIBE')}</strong><small>Inneneinheit</small></article>
    </div>
    <div class="distribution" aria-hidden="true"><i data-destination="heat"></i><i data-destination="water"></i></div><div class="destinations">
-    <article class="destination heat" data-destination="heat"><ha-icon icon="mdi:home-thermometer-outline" aria-hidden="true"></ha-icon><div><b>Vorlauf · Heizkreis</b><strong>${this.live('supply')}</strong><small>Vorlauf · BT2</small></div><span class="branch-state" data-branch="heat">Bereit</span></article>
-    <article class="destination water" data-destination="water"><ha-icon icon="mdi:water-boiler" aria-hidden="true"></ha-icon><div><b>Warmwasser</b><strong>${this.live('hotWaterTop')}</strong><small>Speicher oben · BT7</small></div><span class="branch-state" data-branch="water">Bereit</span></article>
+    <article class="destination heat" data-destination="heat"><ha-icon icon="mdi:home-thermometer-outline" aria-hidden="true"></ha-icon><div><b>Vorlauf · Heizkreis</b><strong>${this.live('supply')}</strong><small>Vorlauftemperatur</small></div><span class="branch-state" data-branch="heat">Bereit</span></article>
+    <article data-feature="water" class="destination water" data-destination="water"><ha-icon icon="mdi:water-boiler" aria-hidden="true"></ha-icon><div><b>Warmwasser</b><strong>${this.live('hotWaterTop')}</strong><small>Speichertemperatur oben</small></div><span class="branch-state" data-branch="water">Bereit</span></article>
    </div><details class="technical-details"><summary>Datenbasis</summary><p class="plant-note" data-operation-detail></p></details>
   </section>`;
  }
- metric(role){const p=PROFILE[role]; return `<article class="metric"><div><small>${esc(p.l)}${p.t?` · ${p.t}`:""}</small><strong>${this.live(role)}</strong></div><em data-quality="${role}"></em></article>`;}
+ metric(role){const p={...PROFILE[role],t:this.config?.mappings?.[role]||this.activeProfile?.id==='generic'?null:PROFILE[role].t}; return `<article class="metric"><div><small>${esc(p.l)}${p.t?` · ${p.t}`:""}</small><strong>${this.live(role)}</strong></div><em data-quality="${role}"></em></article>`;}
  overview(){
   const sg=ncSg(this.stateValues()).label;
   const wh=this.st("waterHeater"), ops=wh?.attributes?.operation_list||[];
@@ -276,34 +441,81 @@ class NibeControlCard extends HTMLElement {
   const evccEnabled=yes(this.val("evccEnabled")), evccRequest=yes(this.val("evccCharging"));
   return `<div class="overview-grid">
    <section class="panel climate-panel"><div class="climate-values"><span>Raum<b>${this.live("room")}</b></span><span>Außen<b>${this.live("outdoor")}</b></span></div><details class="technical-details"><summary>Temperaturinformationen</summary><p class="hint">Gemessene Raumtemperatur. Der MyUplink-Sollwert wird lokal nicht bereitgestellt.</p></details></section>
-   <details class="panel water-panel"><summary>Warmwasser · Bedienung und Ladefühler</summary><div class="title"><div><small>WARMWASSER</small><h2>${this.live("hotWaterTop")}</h2></div><ha-icon icon="mdi:water-boiler"></ha-icon></div><div class="pair"><span>Ladefühler · BT6 <b>${this.live("hotWaterCharge")}</b></span><span>Warmwassermodus <b data-raw="hotWaterMode"></b></span><span>Mehr Warmwasser <b data-raw="moreHotWater"></b></span><span>Betrieb <b><span data-raw="waterHeater"></span></b></span></div><label class="mode-control" for="hw-mode">Warmwassermodus<select id="hw-mode" disabled>${ops.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select></label><p class="hint" data-water-control-help></p></details>
+   <details class="panel water-panel" data-feature="water"><summary>Warmwasser · Bedienung und Ladefühler</summary><div class="title"><div><small>WARMWASSER</small><h2>${this.live("hotWaterTop")}</h2></div><ha-icon icon="mdi:water-boiler"></ha-icon></div><div class="pair"><span>Ladefühler · BT6 <b>${this.live("hotWaterCharge")}</b></span><span>Warmwassermodus <b data-raw="hotWaterMode"></b></span><span>Mehr Warmwasser <b data-raw="moreHotWater"></b></span><span>Betrieb <b><span data-raw="waterHeater"></span></b></span></div><label class="mode-control" for="hw-mode">Warmwassermodus<select id="hw-mode" disabled>${ops.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select></label><p class="hint" data-water-control-help></p></details>
    <section class="panel energy-board"><div class="energy-head"><div><small>ENERGIE · PV-OPTIMIERUNG</small><h2>${this.live("electrical")}</h2><p>Elektrische Leistung</p></div><ha-icon icon="mdi:solar-power-variant-outline"></ha-icon></div>
-    <div class="energy-flow">
+    <div class="energy-flow" data-feature="evcc">
      <article class="energy-node ${evccEnabled?"is-active":""}"><ha-icon icon="mdi:solar-power"></ha-icon><span>EVCC-Freigabe</span><b data-state="evccEnabled">${evccEnabled?"Aktiv":"Inaktiv"}</b></article>
      <i aria-hidden="true"></i>
      <article class="energy-node ${evccRequest?"is-active":""}"><ha-icon icon="mdi:heat-pump-outline"></ha-icon><span>EVCC-Anforderung</span><b data-state="evccCharging">${evccRequest?"Aktiv":"Keine"}</b></article>
      <i aria-hidden="true"></i>
      <article class="energy-node sg"><ha-icon icon="mdi:transmission-tower-import"></ha-icon><span>SG Ready</span><b data-sg>${esc(sg)}</b></article>
     </div>
-    <div class="energy-facts"><span>PV-Aktion<b data-raw="evccAction"></b></span><span>Anhebung<b>${this.live("evccActionValue")}</b></span><span>Heizstab<b>${this.live("additionalHeat")}</b></span></div>${this.evccControl()}
-    <details class="technical-details"><summary>SG-Kontakte und Erklärung</summary><div class="sg-contacts"><span>SG A <b data-contact="sgA">—</b></span><span>SG B <b data-contact="sgB">—</b></span></div><p class="energy-explanation" data-energy-explanation></p><p class="hint" data-sg-detail></p></details>
+    <div class="energy-facts"><span data-feature="evcc">PV-Aktion<b data-raw="evccAction"></b></span><span data-feature="evcc">Anhebung<b>${this.live("evccActionValue")}</b></span><span>Heizstab<b>${this.live("additionalHeat")}</b></span></div>${this.evccControl()}
+    <div data-feature="sg"><b>SG Ready: <span data-sg></span></b></div><details class="technical-details"><summary>SG-Kontakte und Erklärung</summary><div class="sg-contacts"><span>SG A <b data-contact="sgA">—</b></span><span>SG B <b data-contact="sgB">—</b></span></div><p class="energy-explanation" data-energy-explanation></p><p class="hint" data-sg-detail></p></details>
    </section>
   </div><p role="status" aria-live="polite" class="hint" data-control-feedback></p><div class="metric-row">${["supplyTarget","supply","return","hpSupply","degreeMinutes","flow"].map(r=>this.metric(r)).join("")}</div>`;
  }
- evccControl(){return `<label class="mode-control" for="evcc-mode">EVCC-Modus<select id="evcc-mode" disabled></select></label>`;}
- charts(){return `<label class="mode-control" for="history-period">Zeitraum<select id="history-period"><option value="6">6 Stunden</option><option value="12">12 Stunden</option><option value="24" selected>24 Stunden</option></select></label><p class="hint" data-history-feedback role="status">Verläufe werden beim Öffnen und jede Minute aktualisiert. Tippe auf eine Kurve oder bewege den Zeitregler, um alle Messwerte desselben Moments zu vergleichen.</p><div class="chart-grid">${["heating","frequency","power","water"].map(k=>`<section class="panel chart"><div class="chart-head"><div><small data-period-label>${this.historyHours||24} STUNDEN</small><h3>${k==="heating"?"Heizkreis":k==="frequency"?"Verdichterfrequenz":k==="power"?"Elektrische Leistung":"Warmwasser"}</h3></div><span class="legend"></span></div><div class="plot" id="plot-${k}"><div class="loader">Historie wird geladen …</div></div></section>`).join("")}</div>`;}
+ evccControl(){return `<label data-feature="evcc" class="mode-control" for="evcc-mode">EVCC-Modus<select id="evcc-mode" disabled></select></label>`;}
+ charts(){return `<label class="mode-control" for="history-period">Zeitraum<select id="history-period"><option value="6">6 Stunden</option><option value="12">12 Stunden</option><option value="24" selected>24 Stunden</option></select></label><p class="hint" data-history-feedback role="status">Verläufe werden beim Öffnen und jede Minute aktualisiert. Tippe auf eine Kurve oder bewege den Zeitregler, um alle Messwerte desselben Moments zu vergleichen.</p><div class="chart-grid">${["heating","frequency","power","water"].map(k=>`<section class="panel chart" ${k==='water'?'data-feature="water"':''}><div class="chart-head"><div><small data-period-label>${this.historyHours||24} STUNDEN</small><h3>${k==="heating"?"Heizkreis":k==="frequency"?"Verdichterfrequenz":k==="power"?"Elektrische Leistung":"Warmwasser"}</h3></div><span class="legend"></span></div><div class="plot" id="plot-${k}"><div class="loader">Historie wird geladen …</div></div></section>`).join("")}</div>`;}
  dataState(role){if(this.discovery?.ambiguous?.includes(role))return 'Mehrdeutig · manuelle Zuordnung nötig';if(this.meta?.[role]?.disabled_by)return 'Deaktiviert';return this.available(role)?'Verfügbar':this.meta?.[role]||this.st(role)?'Nicht verfügbar':'Nicht zugeordnet';}
  setup(){
-  const roles=Object.entries(PROFILE).filter(([,p])=>p.req),ready=roles.filter(([r])=>this.available(r)).length;
-  const rows=roles.sort(([a],[b])=>Number(this.available(a))-Number(this.available(b))).map(([r,p])=>`<li><span><b>${esc(p.l)}</b><em data-check="${r}">${this.dataState(r)}</em><details class="technical-details"><summary>Entity anzeigen</summary><small data-entity="${r}">${esc(this.mapping[r])}</small><small data-candidates="${r}"></small></details></span></li>`).join('');
-  return `<section class="panel setup"><div class="title"><div><small>EINRICHTUNG</small><h2>Zuordnung und Datencheck</h2></div><span class="score">${ready}/${roles.length}</span></div><label class="mode-control" for="installation">NIBE-Installation<select id="installation"><option value="">${this.discovery?.entries?.length>1?'Bitte auswählen':'Automatisch'}</option>${(this.discovery?.entries||[]).map(id=>`<option value="${esc(id)}" ${id===this.discovery.selected?'selected':''}>${esc(this.devices?.find(d=>d.config_entries?.includes(id))?.name||'NIBE')} · ${esc(id.slice(-6))}</option>`).join('')}</select></label><p class="hint">Auswahl gilt für diese Sitzung. Dauerhaft: config_entry_id in der Dashboard-Strategie speichern. Bestehende manuelle Zuordnungen haben Vorrang.</p><p data-discovery-error>${this.discoveryError?'Registry nicht erreichbar. Manuelle Zuordnungen bleiben erhalten.':''}</p><p data-setup-score>${ready} von ${roles.length} empfohlenen Datenpunkten verfügbar. Fehlende Werte stehen zuerst.</p><ul>${rows}</ul><aside><b>Deaktivierte Werte aktivieren:</b> Einstellungen → Geräte & Dienste → NIBE Heat Pump → Gerät → Entitäten. „Deaktivierte Entitäten anzeigen“, gewünschte Entity öffnen und aktivieren. Nicht verfügbare Werte benötigen eine Prüfung der Integration.</aside></section>`;
+  const groups=[['Temperaturen und Heizung',['room','outdoor','supply','return','supplyTarget','hpSupply','hpReturn','degreeMinutes','flow']],['Verdichter und Energie',['compressorHz','requestedHz','electrical','outdoorPower','thermal','additionalHeat','priority','compressorStatus','defrost','alarm']],['Warmwasser',['hotWaterTop','hotWaterCharge','hotWaterMode','moreHotWater','waterHeater','diverter']],['PV, EVCC und SG Ready',['evccEnabled','evccCharging','evccAction','evccActionValue','evccMode','sgMode','sgA','sgB']],['Lüftung und technische Werte',['ventilationSupply','ventilationExtract','ventilationMode','roomSetpoint','useRoomSensor','climate']]];
+  const ids=[...new Set([...(this.registry||[]).map(e=>e.entity_id),...Object.keys(this._hass.states)])].sort();
+  return `<section class="panel setup"><div class="title"><div><small>COMMUNITY · EINRICHTUNG</small><h2>Deine Anlage, deine Werte</h2></div></div><p class="hint">Automatische Vorschläge prüfen oder später jederzeit korrigieren. Änderungen wirken erst nach „Einrichtung speichern“ und gelten für dieses Dashboard auf allen Displays.</p><form id="community-setup" novalidate><fieldset><legend>1 · Anlage auswählen</legend><label for="installation">NIBE-Installation</label><select id="installation"><option value="">Automatisch / andere Integration</option>${(this.discovery?.entries||[]).map(id=>`<option value="${esc(id)}" ${id===(this.config.config_entry_id||this.discovery.selected)?'selected':''}>${esc(this.devices?.find(d=>d.config_entries?.includes(id))?.name||'NIBE')} · ${esc(id.slice(-6))}</option>`).join('')}</select><label for="device-profile">Wärmepumpenprofil</label><select id="device-profile"><option value="auto">Automatisch erkennen</option>${Object.entries(DEVICE_PROFILES).map(([id,p])=>`<option value="${id}" ${id===this.config.profile?'selected':''}>${esc(p.model)}</option>`).join('')}</select><p class="hint" data-profile-evidence>${esc(this.activeProfile?.verified||'')}</p><p data-discovery-error>${this.discoveryError?'Registry nicht erreichbar. Manuelle Zuordnung bleibt möglich.':''}</p></fieldset>
+   <fieldset><legend>2 · Messwerte zuordnen</legend><p class="hint">Leeres Feld nutzt den Vorschlag. Wähle eine Entity aus der Liste oder gib ihre ID ein. „Nicht verwenden“ entfernt diesen Datenpunkt. Raumtemperatur kann auch von einem anderen Temperatursensor kommen.</p><datalist id="nc-entities">${ids.map(id=>`<option value="${esc(id)}">${esc(this._hass.states[id]?.attributes?.friendly_name||id)}</option>`).join('')}</datalist>${groups.map(([title,roles],index)=>`<details class="mapping-group" ${index===0?'open':''}><summary>${title}</summary>${roles.map(role=>`<div class="mapping-field"><label for="map-${role}">${esc(PROFILE[role].l)}</label><input id="map-${role}" data-mapping="${role}" list="nc-entities" autocomplete="off" value="${esc(this.config.mappings?.[role]||'')}" placeholder="Automatisch" aria-describedby="map-info-${role}"><label class="exclude"><input type="checkbox" data-exclude="${role}" ${Object.hasOwn(this.config.mappings||{},role)&&this.config.mappings[role]==null?'checked':''}>Nicht verwenden</label><small id="map-info-${role}" data-mapping-preview="${role}"></small></div>`).join('')}</details>`).join('')}</fieldset>
+   <fieldset><legend>3 · Bereiche anzeigen</legend>${Object.keys(FEATURE_ROLES).map(feature=>`<label for="visibility-${feature}">${{water:'Warmwasser',ventilation:'Lüftung',evcc:'PV / EVCC'}[feature]}</label><select id="visibility-${feature}" data-visibility="${feature}"><option value="auto">Bei vorhandenen Daten anzeigen</option><option value="hide" ${this.config.visibility?.[feature]==='hide'?'selected':''}>Ausblenden</option></select><small data-feature-status="${feature}"></small>`).join('')}<p class="hint">Ausblenden betrifft nur dieses Dashboard. Die Anlage und Automationen laufen weiter. Inaktive Bereiche bleiben hier erkennbar.</p></fieldset><p class="hint" data-setup-feedback role="status" aria-live="polite">${esc(this.setupFeedback||'Noch keine Änderungen gespeichert.')}</p><button type="submit" id="setup-save">Einrichtung speichern</button></form><aside><b>Deaktivierte Entitäten:</b> Einstellungen → Geräte & Dienste → NIBE Heat Pump → Gerät → Entitäten. Deaktivierte Entitäten anzeigen und nur benötigte Werte aktivieren.</aside></section>`;
+ }
+ setupDraft(){
+  const root=this.shadowRoot,mappings={...this.config.mappings};root.querySelectorAll('[data-mapping]').forEach(input=>{const role=input.dataset.mapping;if(root.querySelector(`[data-exclude="${role}"]`)?.checked)mappings[role]=null;else if(input.value.trim())mappings[role]=input.value.trim();else delete mappings[role];});
+  return {profile:root.getElementById('device-profile').value,config_entry_id:root.getElementById('installation').value||null,mappings,visibility:Object.fromEntries([...root.querySelectorAll('[data-visibility]')].map(input=>[input.dataset.visibility,input.value]))};
+ }
+ previewSetup(){
+  const draft=this.setupDraft(),profile=deviceProfile(draft.profile,this.devices||[],draft.config_entry_id),result=resolveDiscovery(this.registry||[],draft.mappings,draft.config_entry_id,profile);
+  const evidence=this.shadowRoot.querySelector('[data-profile-evidence]');if(evidence)evidence.textContent=profile.model+' · '+profile.verified;
+  this.shadowRoot.querySelectorAll('[data-mapping-preview]').forEach(el=>{const role=el.dataset.mappingPreview,id=result.mapping[role],state=this._hass.states[id],meta=this.registry?.find(e=>e.entity_id===id);el.textContent=!id?(result.ambiguous.includes(role)?'Mehrdeutig · bitte manuell wählen':'Nicht zugeordnet'):id+' · '+(meta?.disabled_by?'Deaktiviert':valid(state)?'Verfügbar':'Nicht verfügbar');});
+  this.shadowRoot.querySelectorAll('[data-feature-status]').forEach(el=>el.textContent=capabilityState(el.dataset.featureStatus,result.mapping,this.registry,this._hass.states,draft.visibility).label);
+ }
+ bindSetup(){
+  const form=this.shadowRoot.getElementById('community-setup');if(!form)return;
+  this.shadowRoot.getElementById('device-profile').value=this.config.profile||'auto';
+  form.oninput=()=>this.previewSetup();form.onchange=()=>this.previewSetup();form.onsubmit=e=>{e.preventDefault();this.saveSetup(this.setupDraft());};this.previewSetup();
+ }
+ async saveSetup(settings){
+  if(this.setupPending)return false;
+  const feedback=this.shadowRoot.querySelector('[data-setup-feedback]'),message=text=>{this.setupFeedback=text;if(feedback)feedback.textContent=text;};
+  if(this._hass.connected===false){message('Home Assistant getrennt. Eingaben bleiben erhalten; nach Wiederverbindung speichern.');return false;}
+  for(const [role,id] of Object.entries(settings.mappings))if(id&&PROFILE[role]){const exists=this.registry?.some(e=>e.entity_id===id)||this._hass.states[id];if(!exists||!entityCompatible(role,id,this._hass.states[id],DEVICE_PROFILE.roles[role])){const input=this.shadowRoot.getElementById('map-'+role);input?.setAttribute('aria-invalid','true');input?.focus();message(`${PROFILE[role].l}: Entity fehlt oder Domain/Einheit passt nicht. Bitte eine passende Entity wählen.`);return false;}}
+  this.shadowRoot.querySelectorAll('[data-mapping]').forEach(input=>input.removeAttribute('aria-invalid'));
+  const route=this.config.dashboard_url_path??window.location?.pathname?.split('/').filter(Boolean)[0];
+  if(!route){message('Dashboard-Adresse nicht erkennbar. Im NIBE-Control-Dashboard öffnen und erneut speichern.');return false;}
+  const url_path=route==='lovelace'?null:route,fields=[...this.shadowRoot.querySelectorAll('#community-setup fieldset')],button=this.shadowRoot.getElementById('setup-save');this.setupPending=true;fields.forEach(f=>f.disabled=true);if(button){button.disabled=true;button.textContent='Wird gespeichert …';}message('Einrichtung wird in Home Assistant gespeichert …');let submitted=false;
+  try{
+   const raw=await this._hass.callWS({type:'lovelace/config',url_path,force:true});
+   if(settingSnapshot(raw)!==(this.settingsBaseline||settingSnapshot(this.config))){message('Die Einrichtung wurde inzwischen geändert. Dashboard neu laden und deine Zuordnung prüfen; es wurde nichts überschrieben.');return false;}
+   const updated=mergeDashboardSettings(raw,settings);
+   await this._hass.callWS({type:'lovelace/config/save',url_path,config:updated});submitted=true;
+   const confirmed=await this._hass.callWS({type:'lovelace/config',url_path,force:true});
+   if(settingSnapshot(confirmed)!==settingSnapshot(updated))throw new Error('readback');
+   this.config={...this.config,...settings,setup_complete:true};this.settingsBaseline=settingSnapshot(confirmed);this.applyDiscovery();this.helperIds={};this.findMaintenanceHelpers();this.chartInspectors={};this.setupFeedback='Einrichtung gespeichert. Gilt auf allen Displays dieses Dashboards.';this.render();this.selectPlant('heatpump');this.shadowRoot.querySelector('[data-tab="setup"]')?.click();this.loadHistory();return true;
+  }catch(e){message(submitted?'Speicherung übermittelt, Rückprüfung nicht möglich. Dashboard neu laden und gespeicherte Werte prüfen.':'Nicht gespeichert. Administratorrechte, Verbindung und Dashboard im Speichermodus prüfen. Eingaben bleiben erhalten.');return false;}
+  finally{this.setupPending=false;fields.forEach(f=>f.disabled=false);if(button){button.disabled=false;button.textContent='Einrichtung speichern';}}
+ }
+ ventilationModel(){const found=(this.devices||[]).filter(d=>/ERS/i.test(d.model||'')&&(!this.discovery?.selected||d.config_entries?.includes(this.discovery.selected)));return found.length===1?found[0].model:'Lüftung';}
+ feature(feature){return capabilityState(feature,this.mapping,this.registry,this._hass.states,this.config?.visibility);}
+ applyVisibility(){
+  this.shadowRoot?.querySelectorAll('[data-feature]').forEach(el=>{const feature=el.dataset?.feature;if(!feature)return;if(feature==='sg'){el.hidden=this.feature('evcc').visible;return;}el.hidden=!this.feature(feature).visible||(el.id==='ventilation'&&this.selectedPlant!=='ventilation');});
+  this.shadowRoot?.querySelectorAll('[data-feature-status]').forEach(el=>{if(!this.shadowRoot.getElementById('community-setup'))el.textContent=this.feature(el.dataset.featureStatus).label;});
+ }
+ convertHistory(role,rows){
+  const unit=this.st(role)?.attributes?.unit_of_measurement,convert=PROFILE[role]?.u==='kW'&&unit==='W'?v=>v/1000:PROFILE[role]?.u==='°C'&&unit==='°F'?v=>(v-32)*5/9:null;
+  return convert?rows.map(row=>{const key=Object.hasOwn(row,'s')?'s':'state',n=ncNumber(row[key]);return n==null?row:{...row,[key]:String(convert(n))};}):rows;
  }
  diagnostics(){
   const rows=Object.entries(PROFILE).filter(([r,p])=>p.diag&&!r.startsWith('ventilation')).map(([r,p])=>`<div class="diagnostic-row"><span>${esc(p.l)}${p.t?' · '+esc(p.t):''}</span><b data-diagnostic="${r}"></b><small data-quality="${r}"></small></div>`).join('');
   return `<section class="panel"><div class="title"><div><small>NUR ANZEIGE</small><h2>Technische Diagnose</h2></div></div><div class="diagnostic-list">${rows}</div><details class="technical-details"><summary>Ungeklärte Zuordnungen</summary><p class="hint">GP1: Register 31103/31637 benötigt einen Livevergleich. Der lokale Raum-Sollwert ist kein bestätigter MyUplink-Sollwert. Unbekannte Statuscodes bleiben Rohwerte.</p></details></section>`;
  }
  ventilation(){
-  return `<style>.filter-settings{margin-top:14px;border-top:1px solid var(--nc-line);padding-top:12px}.filter-settings summary{cursor:pointer;min-height:44px;padding:10px 0;font-weight:600}.filter-settings summary:hover{color:var(--nc-teal)}.filter-settings form{display:grid;gap:8px;max-width:440px}.filter-settings label{font-size:.8rem;margin-top:8px}.filter-settings input{min-height:44px;width:100%;padding:9px;border:1px solid var(--nc-line);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color)}.filter-settings p{font-size:.75rem;line-height:1.5}.filter-settings input[aria-invalid=true]{border-color:var(--error-color)}#filter-settings-error{color:var(--error-color)}</style><section class="panel ventilation-panel" aria-label="Lüftung ERS S40-400"><div class="vent-heading"><div><small>LÜFTUNG</small><h3>ERS S40-400</h3></div><span data-vent-operation></span></div>
+  return `<style>.filter-settings{margin-top:14px;border-top:1px solid var(--nc-line);padding-top:12px}.filter-settings summary{cursor:pointer;min-height:44px;padding:10px 0;font-weight:600}.filter-settings summary:hover{color:var(--nc-teal)}.filter-settings form{display:grid;gap:8px;max-width:440px}.filter-settings label{font-size:.8rem;margin-top:8px}.filter-settings input{min-height:44px;width:100%;padding:9px;border:1px solid var(--nc-line);border-radius:10px;background:var(--card-background-color);color:var(--primary-text-color)}.filter-settings p{font-size:.75rem;line-height:1.5}.filter-settings input[aria-invalid=true]{border-color:var(--error-color)}#filter-settings-error{color:var(--error-color)}</style><section class="panel ventilation-panel" aria-label="Lüftung"><div class="vent-heading"><div><small>LÜFTUNG</small><h3>${esc(this.ventilationModel())}</h3></div><span data-vent-operation></span></div>
    <div class="vent-flow" aria-label="Luftwege, schematisch"><div class="vent-lane" data-vent-lane="ventilationSupply"><span>Außenluft → Zuluft ins Haus</span><i aria-hidden="true"></i><b>Zuluftventilator ${this.live('ventilationSupply',0)}</b></div><div class="vent-exchanger"><ha-icon icon="mdi:air-filter" aria-hidden="true"></ha-icon><b>Wärmetauscher</b><small>Rotorstatus unbekannt</small></div><div class="vent-lane" data-vent-lane="ventilationExtract"><span>Abluft aus dem Haus → Fortluft</span><i aria-hidden="true"></i><b>Abluftventilator ${this.live('ventilationExtract',0)}</b></div></div>
    <details class="technical-details"><summary>Lüftungsdaten</summary><p class="hint">Die Prozentwerte beschreiben die Ventilatoren, nicht gemessene Luftmengen. Bewegung zeigt Ventilatoraktivität. Rotorbetrieb und Lufttemperaturen sind nicht verfügbar.</p><p>Lüftermodus (Rohwert): <span data-diagnostic="ventilationMode"></span></p></details>
    <div class="vent-maintenance"><div><h3>Filterwartung</h3><p data-filter-last></p><p data-filter-due></p><b data-filter-status></b></div><button type="button" id="filter-change">Filterwechsel erfassen</button></div>
@@ -385,11 +597,12 @@ class NibeControlCard extends HTMLElement {
   this.shadowRoot.querySelector('nav').hidden=plant!=='heatpump';
   this.shadowRoot.querySelector('[data-choice-hint]').hidden=true;
   this.shadowRoot.getElementById('ventilation').hidden=plant!=='ventilation';
-  this.shadowRoot.querySelectorAll('.tab').forEach(el=>el.hidden=plant!=='heatpump');
+  this.shadowRoot.querySelectorAll('.tab').forEach(el=>el.hidden=plant!=='heatpump');this.applyVisibility();
  }
  bind(){
   this.bindMaintenance();
-  const installation=this.shadowRoot.getElementById('installation');if(installation)installation.onchange=()=>{const selectedPlant=this.selectedPlant,activeTab=this.shadowRoot.querySelector('nav button.active')?.dataset.tab||'overview';this.config={...this.config,config_entry_id:installation.value||null};this.historyGeneration=(this.historyGeneration||0)+1;this.historyPending=false;this.chartInspectors={};this.applyDiscovery();this.helperIds={};this.findMaintenanceHelpers();this.render();if(selectedPlant)this.selectPlant(selectedPlant);this.shadowRoot.querySelector(`[data-tab="${activeTab}"]`)?.click();this.loadHistory();};
+  this.bindSetup();
+  const settingsButton=this.shadowRoot.querySelector('[data-open-settings]');if(settingsButton)settingsButton.onclick=()=>{this.selectPlant('heatpump');this.shadowRoot.querySelector('[data-tab="setup"]')?.click();};
   this.shadowRoot.querySelectorAll('[data-plant]').forEach(b=>b.onclick=()=>this.selectPlant(b.dataset.plant));
   this.shadowRoot.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{this.shadowRoot.querySelectorAll("nav button,.tab").forEach(x=>x.classList.remove("active")); b.classList.add("active"); this.shadowRoot.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="charts")this.loadHistory();if(b.dataset.tab==="setup")this.refreshRegistry();});
   const period=this.shadowRoot.getElementById('history-period');if(period)period.value=String(this.historyHours||24);if(period)period.onchange=()=>{this.historyHours=Number(period.value);this.historyGeneration=(this.historyGeneration||0)+1;this.historyPending=false;this.inspectionTime=null;this.loadHistory();};
@@ -408,9 +621,9 @@ class NibeControlCard extends HTMLElement {
  }
  paintValues(){
   if(!this.shadowRoot?.querySelector("main"))return;
-  this.paintVentilation();
+  this.paintVentilation();this.applyVisibility();
   this.shadowRoot.querySelectorAll('[data-entity]').forEach(el=>el.textContent=this.mapping[el.dataset.entity]||'Keine eindeutige Zuordnung');
-  this.shadowRoot.querySelectorAll('[data-candidates]').forEach(el=>{const role=el.dataset.candidates;el.textContent=this.discovery?.ambiguous?.includes(role)?(this.registry||[]).filter(row=>row.config_entry_id===this.discovery.selected&&reg(row.unique_id)===PROFILE[role].r).map(row=>row.entity_id).join(' · '):'';});
+  this.shadowRoot.querySelectorAll('[data-candidates]').forEach(el=>{const role=el.dataset.candidates;el.textContent=this.discovery?.ambiguous?.includes(role)?(this.registry||[]).filter(row=>row.config_entry_id===this.discovery.selected&&reg(row.unique_id)===this.activeProfile?.roles[role]?.register).map(row=>row.entity_id).join(' · '):'';});
   this.shadowRoot.querySelectorAll('[data-check]').forEach(el=>el.textContent=this.dataState(el.dataset.check));
   const recommended=Object.entries(PROFILE).filter(([,p])=>p.req),ready=recommended.filter(([r])=>this.available(r)).length;
   const score=this.shadowRoot.querySelector('.score');if(score)score.textContent=ready+'/'+recommended.length;
@@ -431,7 +644,7 @@ class NibeControlCard extends HTMLElement {
   this.shadowRoot.querySelectorAll('[data-destination]').forEach(el=>el.classList.toggle('is-active',operation.active && el.dataset.destination===operation.kind));
   this.shadowRoot.querySelectorAll('[data-branch]').forEach(el=>el.textContent=operation.active && el.dataset.branch===operation.kind?'Aktiv':operation.kind==='unknown' || ['alarm','defrost','offline','unknown'].includes(operation.mode)?'Nicht bestätigt':'Keine Wärmeerzeugung');
   const note=this.shadowRoot.querySelector('[data-operation-detail]');
-  if(note)note.textContent=operation.kind==='unknown'?'Für die sichere Unterscheidung von Heizung und Warmwasser wird die Betriebspriorität 31029 benötigt.':'Betriebsart aus NIBE-Priorität 31029 · Aktivität aus Verdichter / Zusatzheizung.';
+  if(note)note.textContent=this.activeProfile?.priorityCodes===false?'Individuelles Profil: Betriebspriorität wird technisch angezeigt; Heiz-/Warmwasserzweige werden nicht aus ungeprüften Codes abgeleitet.':operation.kind==='unknown'?'Für die sichere Unterscheidung von Heizung und Warmwasser wird die Betriebspriorität 31029 benötigt.':'Betriebsart aus NIBE-Priorität 31029 · Aktivität aus Verdichter / Zusatzheizung.';
   const sg=ncSg(this.stateValues());
   this.shadowRoot.querySelectorAll('[data-sg]').forEach(el=>el.textContent=sg.label);
   this.shadowRoot.querySelectorAll('[data-sg-detail]').forEach(el=>el.textContent=sg.detail);
@@ -455,8 +668,8 @@ class NibeControlCard extends HTMLElement {
  }
  normalizeHistory(result){if(!Array.isArray(result))return result||{};const mapped={};for(const series of result){if(!Array.isArray(series)||!series.length)continue;const id=series[0]?.entity_id||series[0]?.e;if(id)mapped[id]=series;}return mapped;}
  draw(key,series,data){
-  const host=this.shadowRoot.getElementById(`plot-${key}`),window=this.historyWindow;
-  const found=series.map(([r,c])=>({r,c,points:ncHistoryPoints(data[this.mapping[r]]||[],window.start,window.end),raw:ncHistoryPoints(data[this.mapping[r]]||[],window.start,window.end,{sample:false})}));
+  const host=this.shadowRoot.getElementById(`plot-${key}`),window=this.historyWindow;if(!host)return;
+  const found=series.map(([r,c])=>({r,c,points:ncHistoryPoints(this.convertHistory(r,data[this.mapping[r]]||[]),window.start,window.end),raw:ncHistoryPoints(this.convertHistory(r,data[this.mapping[r]]||[]),window.start,window.end,{sample:false})}));
   const nums=found.flatMap(x=>x.points.filter(p=>p.value!=null).map(p=>p.value));
   if(!nums.length){host.innerHTML='<div class="empty">Keine Messwerte im Zeitraum verfügbar</div>';return;}
   const scale=ncHistoryScale(nums);if(['frequency','power'].includes(key)&&scale.min<0&&nums.every(n=>n>=0)){scale.min=0;scale.span=scale.max-scale.min;}const {min,max,span}=scale,unit=this.unit(found.find(x=>x.points.some(p=>p.value!=null)).r);
@@ -475,7 +688,8 @@ class NibeControlCard extends HTMLElement {
   const legend=host.querySelector('.chart-legend');for(const x of found){const button=document.createElement('button');button.type='button';button.dataset.toggle=x.r;const hidden=this.hiddenSeries?.[key]?.has(x.r)||false;button.setAttribute('aria-pressed',String(!hidden));if(hidden)host.querySelector(`[data-series="${x.r}"]`).style.display='none';button.style.setProperty('--c',x.c);button.textContent=PROFILE[x.r].l+(x.points.some(p=>p.value!=null)?'':' · Keine Historie');button.disabled=!x.points.some(p=>p.value!=null);button.onclick=()=>{const visible=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(visible));this.hiddenSeries=this.hiddenSeries||{};this.hiddenSeries[key]=this.hiddenSeries[key]||new Set();if(visible)this.hiddenSeries[key].delete(x.r);else this.hiddenSeries[key].add(x.r);host.querySelector(`[data-series="${x.r}"]`).style.display=visible?'':'none';};legend.append(button);}
  }
  inspectTime(time,live=false){this.inspectionTime=live?null:time;for(const inspect of Object.values(this.chartInspectors||{}))inspect(time);}
- compactStyles(){return `
+ compactStyles(){return `.setup fieldset{border:0;border-top:1px solid var(--nc-line);margin:16px 0;padding:16px 0;min-width:0}.setup legend{font-weight:650;padding-right:12px}.setup fieldset>label{display:block;margin-top:12px;font-size:.85rem}.setup select,.mapping-field input:not([type=checkbox]){display:block;width:100%;box-sizing:border-box;min-height:44px;background:var(--card-background-color);color:var(--primary-text-color);border:1px solid var(--nc-line);border-radius:10px;padding:10px;margin-top:6px}.setup small{display:block;overflow-wrap:anywhere;color:var(--secondary-text-color);font-size:.72rem;line-height:1.5}.mapping-field{padding:12px 0;border-top:1px solid var(--nc-line)}.mapping-field>label{display:block;font-size:.85rem;font-weight:600}.mapping-field .exclude{display:flex;align-items:center;gap:8px;min-height:44px;font-weight:400;font-size:.75rem}.mapping-field input[aria-invalid=true]{border-color:var(--error-color)}.setup button,[data-open-settings]{min-height:44px;border:1px solid var(--nc-line);border-radius:10px;padding:10px 14px;background:var(--card-background-color);color:var(--primary-text-color);cursor:pointer}.setup button:disabled{cursor:wait;opacity:.65}.setup [data-setup-feedback]{min-height:44px}.plant-choices:has([data-plant=ventilation][hidden]){grid-template-columns:1fr}.setup input:focus-visible,.setup select:focus-visible,[data-open-settings]:focus-visible{outline:3px solid var(--nc-focus);outline-offset:2px}
+
  .sample-table,.history-stats table{width:100%;border-collapse:collapse;font-size:.8rem}.sample-table th,.history-stats th{font-weight:500;text-align:left}.sample-table td{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}.sample-table th,.sample-table td,.history-stats td,.history-stats th{padding:8px 4px;border-bottom:1px solid var(--nc-line)}.sample-table i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}.history-stats{font-size:.75rem;overflow:auto}.history-stats td{text-align:right}.history-stats td[colspan]{text-align:left;color:var(--secondary-text-color);font-size:.7rem}.history-latest{min-height:44px;border:1px solid var(--nc-line);border-radius:8px;background:var(--card-background-color);color:var(--primary-text-color);cursor:pointer;padding:8px 12px}.history-latest:hover{background:var(--nc-card)}.chart-values{padding:10px;border:1px solid var(--nc-line);border-radius:10px;background:var(--nc-surface)}.chart-probe{display:block!important}.plot .chart-y span:before{display:none}.plot .chart-y span{margin:0}.plot svg{cursor:crosshair}
  .panel,.plant{padding:14px;border-radius:16px}.overview-grid{grid-template-columns:1fr 1fr;margin-top:10px;gap:10px}.climate-panel,.water-panel,.energy-board{min-height:0}.energy-board{grid-column:1/-1}.climate-values{display:flex;gap:24px;justify-content:space-between}.climate-values>span{font-size:.75rem;color:var(--secondary-text-color)}.climate-values b{display:block;font-size:1.3rem;color:var(--primary-text-color);font-variant-numeric:tabular-nums;margin-top:3px}.technical-details{margin-top:10px;font-size:.75rem;color:var(--secondary-text-color)}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px}summary:hover{color:var(--primary-text-color)}summary:focus-visible{outline:3px solid var(--nc-focus);outline-offset:2px}.technical-details summary{min-height:36px}.technical-details summary:before,.water-panel>summary:before{content:'＋';font-size:1rem}details[open]>summary:before{content:'−'}.water-panel>summary{font-weight:650;font-size:.85rem}.water-panel .title{margin-top:8px}.energy-head h2{font-size:1.4rem}.energy-flow{margin-top:10px}.energy-node{padding:8px}.energy-node ha-icon{display:none}.energy-node span{white-space:normal}.energy-explanation{margin-top:8px}.plant-core{margin-bottom:0}.outside-value{display:none}.distribution{height:22px;display:grid;grid-template-columns:1fr 1fr;max-width:760px;margin:auto;border-top:2px solid var(--nc-line)}.distribution i{width:2px;background:var(--nc-line);justify-self:center}.distribution i.is-active{background:var(--nc-teal)}.destinations{margin-top:0}.plant-heading{margin-bottom:12px}.plant-note{text-align:left;min-height:0;margin-top:0}.metric-row{gap:6px}.metric{padding:9px}.chart-grid{grid-template-columns:1fr 1fr}.chart:first-child{grid-row:auto}.chart-head h3{font-size:1rem}.plot{position:relative;padding-top:8px;min-height:200px}.chart-unit{font-size:.72rem;color:var(--secondary-text-color);margin-bottom:4px}.chart-frame{display:grid;grid-template-columns:48px minmax(0,1fr);gap:6px}.chart-y{position:relative;height:145px;font-size:.7rem;color:var(--secondary-text-color);font-variant-numeric:tabular-nums}.chart-y span{position:absolute;right:0;transform:translateY(-50%)}.y-max{top:12.5%}.y-mid{top:52.0833%}.y-min{top:91.6667%}.chart-time{display:flex;justify-content:space-between;margin:4px 0 8px 54px;font-size:.65rem;color:var(--secondary-text-color)}.plot .chart-frame svg{display:block;height:145px}.chart-legend{margin-left:54px}.chart-legend{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.chart-legend button{min-height:44px;border:1px solid var(--nc-line);border-radius:8px;background:var(--card-background-color);color:var(--primary-text-color);padding:6px 8px;cursor:pointer;font-size:.72rem}.chart-legend button:before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:6px}.chart-legend button[aria-pressed=false]{opacity:.55}.chart-legend button:disabled{cursor:default;opacity:.55}.chart-legend button:hover:enabled{background:var(--nc-card)}.chart-probe{display:block;font-size:.72rem;margin:8px 0}.chart-probe input{display:block;width:100%;min-height:32px;accent-color:var(--nc-teal)}.chart-values{display:block;font-size:.72rem;min-height:32px;line-height:1.5}.axis{font-size:.7rem;color:var(--secondary-text-color);margin-top:8px}.diagnostic-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--nc-line);font-size:.82rem}.diagnostic-row small{grid-column:1/-1;color:var(--secondary-text-color)}.diagnostic-row b{font-variant-numeric:tabular-nums}.setup li{display:block;padding:10px 0}.setup li em{display:block!important;font-style:normal;margin-top:4px;font-size:.75rem}.setup li .technical-details{margin-top:0}.vent-flow{grid-template-columns:1fr!important;gap:8px;margin:14px 0}.vent-exchanger{padding:10px;flex-direction:row;flex-wrap:wrap;justify-content:center}.vent-exchanger small{width:100%}.vent-exchanger ha-icon{--mdc-icon-size:24px}.vent-lane{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:.75rem}.vent-lane i{grid-column:1/-1;grid-row:2;margin:0}.vent-lane b{font-size:.82rem}.vent-maintenance{margin-top:10px;padding-top:12px}.vent-maintenance b{display:block;margin:8px 0;font-size:1rem}.plant-choices button{padding:12px}.plant-choices strong{margin-top:2px}.app{padding-bottom:24px}nav{position:static!important}.energy-board:after{display:none}@media(max-width:600px){.overview-grid,.chart-grid{grid-template-columns:1fr}.climate-values{justify-content:flex-start;gap:36px}.vent-lane{grid-template-columns:1fr}.vent-lane b{grid-row:2}.vent-lane i{grid-row:3}.vent-heading{flex-direction:row;flex-wrap:wrap}.title h2{font-size:1.35rem}.plant-choices button{gap:4px}.plant-choices small{display:none}.plant-choices span{font-size:.7rem}.plant-heading small{display:none}.plant-heading b{text-align:left;max-width:none}.vent-maintenance{gap:8px}}
  `;}
@@ -580,7 +794,7 @@ class NibeControlCard extends HTMLElement {
 
 class NibeControlStrategy extends HTMLElement {
  static getCreateSuggestions(){return {title:"NIBE Control",icon:"mdi:heat-pump-outline"};}
- static async generate(config){return {title:config.title||"NIBE Control",views:[{title:"Anlage",path:"anlage",icon:"mdi:heat-pump-outline",type:"panel",cards:[{type:"custom:nibe-control-card",mappings:config.mappings||{},ventilation:config.ventilation||{},config_entry_id:config.config_entry_id||null}]}]};}
+ static async generate(config){return {title:config.title||"NIBE Control",views:[{title:"Anlage",path:"anlage",icon:"mdi:heat-pump-outline",type:"panel",cards:[{type:"custom:nibe-control-card",profile:config.profile||'auto',visibility:config.visibility||{},setup_complete:config.setup_complete||false,mappings:config.mappings||{},ventilation:config.ventilation||{},config_entry_id:config.config_entry_id||null}]}]};}
 }
 
 if(!customElements.get("nibe-control-card")) customElements.define("nibe-control-card",NibeControlCard);

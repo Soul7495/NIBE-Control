@@ -1,4 +1,4 @@
-# NIBE Control 0.9.1
+# NIBE Control 0.10.0
 
 ## Neu in 0.5.0
 Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
@@ -15,17 +15,16 @@ Dynamisches, lokales Home-Assistant-Dashboard für NIBE-Wärmepumpen der S-Serie
 - lokale 24-h-SVG-Verläufe ohne externe Bibliothek
 - integrierter Datencheck für deaktivierte oder fehlende Entities
 - sichere Schreib-Allowlist
-- gemessene Raumtemperatur aus der NIBE-Climate-Entity
+- gemessene Raumtemperatur aus Climate oder einem frei gewählten Temperatursensor
 - optionale EVCC-Status- und Modusanzeige
 - eigenes Energie-/PV-Board für EVCC-Anforderung, PV-Aktion, Anhebung und SG Ready
 - responsive Layouts für Smartphone, Tablet und Shelly Wall Display
 - Light/Dark Theme und reduzierte Bewegung
 
 ## Installation
-1. Repository auf GitHub veröffentlichen.
-2. In HACS unter **Frontend → Benutzerdefinierte Repositorys** die Repository-URL als Kategorie **Dashboard** hinzufügen.
-3. NIBE Control installieren und Home Assistant/Browser neu laden.
-4. **Einstellungen → Dashboards → Dashboard hinzufügen → Community-Dashboards → NIBE Control**.
+1. In HACS unter **Frontend → Benutzerdefinierte Repositorys** die Repository-URL als Kategorie **Dashboard** hinzufügen.
+2. NIBE Control installieren und Home Assistant/Browser neu laden.
+3. **Einstellungen → Dashboards → Dashboard hinzufügen → Community-Dashboards → NIBE Control**.
 
 ## Empfohlene Entities
 Der Datencheck im Dashboard zeigt exakt, welche zusätzlichen Entities für die vollständige Ansicht noch deaktiviert sind. Es werden keine Entities automatisch aktiviert.
@@ -54,7 +53,7 @@ Der Einstieg zeigt zwei Kacheln: **Wärmepumpe** und **Lüftung**. Wähle eine A
 1. Lüftung öffnen → **Filterwartung einrichten / ändern**.
 2. Das an deiner NIBE eingestellte Intervall in ganzen Monaten (1–24) eintragen. Die acht vorhandenen Filterregister werden weiterhin nicht ungeprüft zugeordnet.
 3. Das Datum des letzten tatsächlichen Filterwechsels eintragen. Ist es unbekannt, erst nach dem nächsten echten Tausch einrichten.
-4. **Einstellungen übernehmen** → Angaben prüfen → **Ja, Einstellungen speichern**. Erst die zweite Bestätigung speichert.
+3. **Einstellungen übernehmen** → Angaben prüfen → **Ja, Einstellungen speichern**. Erst die zweite Bestätigung speichert.
 5. Bei erstmaliger Einrichtung erstellt HA einen Datumshelfer und einen Zahlenhelfer. Administratorrechte und die HA-Integrationen input_datetime/input_number müssen verfügbar sein. Der Helfername enthält die NIBE-Integrationskennung, damit mehrere Installationen getrennt bleiben. Die Daten überleben Neustarts und stehen auf allen Displays zur Verfügung.
 6. Nach späterem Tausch **Filter gewechselt** wählen und im zweiten Dialog bestätigen.
 
@@ -70,7 +69,7 @@ ERS S40-400: GQ2 / Register 30136 ist Abluft, GQ3 / 30137 Zuluft. Luftwege beweg
 
 ### Verifizierung
 
-69 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
+83 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
 
 ## UI 0.8
 Kompakte Übersicht, Warmwasserbedienung aufklappbar, technische Details eingeklappt. Verläufe trennen Hz und kW und verwenden echte Zeitstempel. Diagramme antippen oder den Zeitregler nutzen; Legenden schalten einzelne Reihen. Einstellungen enthält den Datencheck. Lüfterwerte sind Ventilatorprozente und kein gemessener Volumenstrom. Liveprüfung in HA und auf Zielgeräten steht noch aus.
@@ -78,7 +77,7 @@ Kompakte Übersicht, Warmwasserbedienung aufklappbar, technische Details eingekl
 ## Diagrammkorrektur 0.8.1
 Recorder-Zustände werden bis zur nächsten Änderung horizontal gehalten; Sprünge werden vertikal gezeichnet. Konstante Werte wie Vorlauf Soll 31 °C reichen bis zum abgefragten Zeitfensterende. Unbekannte Zustände unterbrechen die Kurve. Die Y-Achse steht links, Minimum unten; Zeitmarken folgen der HA-Zeitzone. Die Messwertprüfung liest die ungekürzten Ereignisse.
 
-Funktionsprüfung: 69 automatisierte Tests für Historie, Rendering, Discovery, Betriebszustände, SG Ready/EVCC, sichere Bedienung, Fehler-/Offlinefälle, Navigation und Filterwartung. Build/Syntax und statischer UI-Audit bestanden. Echte HA-Livewerte und visuelle Smartphone-/Tablet-Prüfung sind weiterhin offen; die Browserumgebung blockiert lokale HTML-Vorschauen.
+Funktionsprüfung: 83 automatisierte Tests für Historie, Rendering, Discovery, Betriebszustände, SG Ready/EVCC, sichere Bedienung, Fehler-/Offlinefälle, Navigation und Filterwartung. Build/Syntax und statischer UI-Audit bestanden. Echte HA-Livewerte und visuelle Smartphone-/Tablet-Prüfung sind weiterhin offen; die Browserumgebung blockiert lokale HTML-Vorschauen.
 
 ## 0.9: Verläufe auswerten
 - Zeitraum 6, 12 oder 24 Stunden auswählen. Die Zeitachse und Einheit sind direkt am Diagramm sichtbar.
@@ -87,14 +86,30 @@ Funktionsprüfung: 69 automatisierte Tests für Historie, Rendering, Discovery, 
 - „Auswertung des Zeitraums“ zeigt Minimum, Maximum, zeitgewichtetes Mittel und Datenabdeckung. Verdichterlaufzeit und beobachtete Starts stammen ausschließlich aus bekannten Abschnitten. Die Werte sind keine Effizienz-/Fehlerbewertung.
 - Verläufe werden beim Öffnen, bei Wiederverbindung und jede Minute bei sichtbarer Verlaufsansicht aktualisiert. Ein gewählter Zeitpunkt und ausgeblendete Reihen bleiben erhalten. Bei Fehlern bleiben alte Kurven mit einer Fehlermeldung sichtbar.
 
-## Sichere Anlagenzuordnung
-Ein gemeinsames Geräteprofil besitzt Discovery und Anzeige. Es wird nach NIBE-Integration und config_entry abgegrenzt. Bei mehreren Installationen wird keine geraten: Einstellungen → NIBE-Installation auswählen. Die Auswahl ist zunächst sitzungsbezogen. Dauerhaft die echte config_entry_id in der bestehenden Dashboard-Strategie speichern:
-```yaml
-strategy:
-  type: custom:nibe-control
-  config_entry_id: DEINE_NIBE_CONFIG_ENTRY_ID
-```
-Bestehende manuelle `mappings` behalten Vorrang, auch bei Registry-Ausfall. Mehrdeutige Register werden ausdrücklich angezeigt. Nicht registrierbare Steuerfunktionen und unbekannte Codes werden nicht erfunden. Verifiziertes Geräteprofil bleibt VVM S320 / EB101 mit optionaler ERS S40-400; andere Modelle benötigen fachliche Validierung.
+## Community-Einrichtung ab 0.10.0
+
+1. Dashboard öffnen → **Einrichtung / Einstellungen**. Bei noch nicht abgeschlossener Einrichtung öffnet sich der Assistent für Administratoren automatisch.
+2. Unter **Anlage auswählen** deine NIBE-Installation und das Wärmepumpenprofil wählen. Automatische Erkennung nutzt das Modell aus der Device Registry. Bei mehreren Anlagen die richtige Installation ausdrücklich wählen.
+3. Unter **Messwerte zuordnen** die Funktionsgruppen öffnen. Unter jedem Feld steht der automatische Vorschlag und ob die Entity verfügbar, deaktiviert oder nicht zugeordnet ist.
+4. Eine falsche Zuordnung selbst korrigieren: im jeweiligen Feld eine Entity aus der durchsuchbaren Liste auswählen. Namen und IDs sind enthalten. Beispielsweise **Innen** mit `sensor.wohnzimmer_temperatur` statt der NIBE-Climate-Entity belegen. Die Entity muss wirklich existieren und eine Temperatureinheit besitzen. Keine Beispiel-ID ungeprüft übernehmen.
+5. Leeres Feld = wieder automatisch zuordnen. **Nicht verwenden** = genau diesen Messwert entfernen. Bei anderen Anbindungsarten **NIBE · Individuell** wählen und die vorhandenen Daten selbst zuordnen. Dieses Profil errät keine Register oder numerischen Betriebsarten.
+6. Unter **Bereiche anzeigen** Warmwasser, Lüftung und PV/EVCC automatisch anzeigen lassen oder bewusst **Ausblenden** wählen. Der Status zeigt auch ausgeblendete und nicht erkannte Funktionen. Eine deaktivierte/unavailable Entity zählt als vorhandene Funktion, erscheint aber ohne erfundene Werte.
+7. **Einrichtung speichern**. Erst die bestätigte Speicherung übernimmt deine Eingaben. Administratorrechte und ein Dashboard im HA-Speichermodus sind erforderlich. Die Konfiguration liegt in Home Assistant und gilt für dieses Dashboard auf allen Displays. Bestehende Wartungshelfer bleiben erhalten.
+8. Nachträgliche Korrekturen erfolgen an derselben Stelle. Bei Fehlern bleiben Eingaben erhalten. Bei einer inzwischen geänderten Einrichtung nichts überschreiben: neu laden und prüfen. YAML-Dashboards und einzelne Karten ohne NIBE-Dashboardstrategie sind weiter lesbar, benötigen aber ihre manuelle YAML-Konfiguration.
+
+### Geräteprofile und Prüfstatus
+
+| Profil | Prüfung | Grenze |
+|---|---|---|
+| VVM S320 | Entity-Export und vorhandene Anlage VVM S320 / EB101 | Reale Daten und unterstützte Steueroptionen prüfen |
+| VVM S325 | Gemeinsame Registerdatei mit VVM S320 | Kein eigener Hardwaretest |
+| S1155 / S1255, S1156 / S1256 | Eindeutige Registertitel und Einheiten geprüft | Teilprofile; fehlende Verdichter-/WP-Rollen manuell zuordnen |
+| S320 / S325, S2125 | Eindeutige Registertitel und Einheiten geprüft | Kein eigener Hardwaretest; keine ungeprüfte numerische Prioritätsübersetzung |
+| NIBE · Individuell | Freie Zuordnung vorhandener HA-Entities | Keine automatische Register-/Statuscode-Semantik |
+
+Ein Modell in der Auswahlliste ist keine Zusage, dass jede Rolle bei jeder Firmware vorhanden ist. Weitere Geräte und andere Anbindungsarten können über manuelle Zuordnung verwendet werden, soweit die nötigen HA-Entities mit passenden Einheiten verfügbar sind. Temperaturdaten werden in °C, Leistung in kW dargestellt; °F/W werden auch in der Historie umgerechnet. Control-Domains und von HA angebotene Modi bleiben obligatorisch. Eine freie Zuordnung öffnet keine zusätzlichen Schreibrechte.
+
+Quellen, geprüft am 14.10.2026: [NIBE-Modellzuordnung](https://github.com/yozik04/nibe/blob/master/nibe/heatpump.py), [Registerdateien](https://github.com/yozik04/nibe/tree/master/nibe/data), [offizielle HA-Dashboard-API](https://github.com/home-assistant/frontend/blob/dev/src/data/lovelace/config/types.ts). Der kompakte [Registeraudit](docs/profile-register-audit.json) enthält die übernommenen eindeutigen Titel-/Einheitentreffer. Kein Laufzeitdownload dieser Daten.
 
 ## Prüfgrenzen
 Tests führen die ausgelieferte dist-Komponente aus. Echte Home-Assistant-Integration, Mobil-/Tablet-Rendering und reale Hardwareaktionen müssen weiterhin live geprüft werden. Keine gefährlichen Register sind neu bedienbar.
@@ -103,3 +118,6 @@ Tests führen die ausgelieferte dist-Komponente aus. Echte Home-Assistant-Integr
 Registry-bestätigte Sensor-/Number-Aliase desselben Registers und Geräts werden zusammengeführt. Bevorzugt wird der aktive kanonische Entity-Typ; Gradminuten bleiben ausschließlich lesbar. Echte Mehrdeutigkeiten zeigen die Kandidaten. EVCC-Smart-Modus und inaktive PV-Aktion sind verständlich beschriftet, die doppelte Modusanzeige ist entfernt. Diagnose zeigt Verdichter-/Prioritäts-/SG-/Alarmdaten sowie elektrische Leistung zum Vergleich. Ein offener Auswertungsbereich bleibt bei Historienaktualisierung offen.
 
 Die Bildschirmaufnahme von 0.9 belegt Darstellung und Bedienung auf einem Android-Smartphone. Sie bestätigt keine neue Liveprüfung des 0.9.1-Builds oder anderer Zielgeräte. SG-Modus 31912 bleibt bei fehlenden Kontakten ein Rohcode; die gefundene Bibliotheks-Code-Tabelle gilt ausdrücklich für S1155/S1255 und wird nicht auf VVM S320 übertragen.
+
+## Prüfumfang 0.10.0
+83 Tests einschließlich der ausgelieferten Komponente: Mapping, Ausschluss, Geräteauswahl, W/°F, Speicherung/Rückprüfung, Rechte-/Offline-/Konfliktfälle, Filterwartung, sichere Bedienung und Historie. Build, Syntax und statischer UI-Audit sind geprüft. Neuer Assistent, native Datalist und tatsächliche Speicherung auf deiner Home-Assistant-Instanz benötigen den Livecheck; automatisierte Mocks ersetzen ihn nicht.
