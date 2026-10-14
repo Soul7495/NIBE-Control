@@ -48,7 +48,7 @@ export function ncSg(values) {
   return {label:mapped || (ncNumber(values.sgMode)!=null?`Statuscode ${values.sgMode}`:'Nicht verfügbar'),detail:'SG-Eingänge A/B fehlen oder sind nicht verfügbar. Numerische Modi werden nicht geraten.',tone:'unknown'};
 }
 export function ncEvccMode(raw) {
-  return ({off:'Aus',pv:'PV-Überschuss',minpv:'Min. + PV',now:'Sofort'})[String(raw ?? '').toLowerCase()] || (NC_INVALID.has(String(raw ?? '').toLowerCase())?'Nicht verfügbar':String(raw));
+  return ({off:'Aus',pv:'PV-Überschuss',minpv:'Min. + PV',now:'Sofort',smart:'Smart-Modus'})[String(raw ?? '').toLowerCase()] || (NC_INVALID.has(String(raw ?? '').toLowerCase())?'Nicht verfügbar':String(raw));
 }
 // Calendar dates are owned by HA's timezone, independent of the display device.
 export function ncToday(timeZone='Europe/Berlin', now=new Date()) {
@@ -100,3 +100,5 @@ export function ncHistoryStats(points,start,end){
  }
  return {min:duration?min:null,max:duration?max:null,mean:duration?total/duration:null,coverage:(end>start?duration/(end-start):0),runningHours:running/3600000,starts};
 }
+
+export function ncPvAction(raw){const s=String(raw??'').toLowerCase();return ({inactive:'Keine PV-Aktion',active:'PV-Aktion aktiv'})[s]||(NC_INVALID.has(s)?'Nicht verfügbar':`Aktion: ${raw}`);}
