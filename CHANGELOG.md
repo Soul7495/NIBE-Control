@@ -32,6 +32,12 @@
 
 # Changelog
 
+## 0.10.2
+- Zeitraum-Auswahl und Excel-Aktion im gemeinsamen Raster, exakt an der Unterkante ausgerichtet.
+- Kompakter Symbol-/Excel-Button statt großer Exportkachel; gleiche 44-px-Höhe und stabile Breite während des Exports.
+- Leere Export-Rückmeldung belegt keinen zusätzlichen Abstand. Exportfunktion unverändert.
+
+
 ## 0.10.1
 - Ruhiges Einstellungszahnrad im Header; keine dominante Einrichtungsschaltfläche oder erzwungene Ersteinrichtung.
 - Manuelle Zuordnung über echte native Auswahl aktivierter, kompatibler Entities statt Android-Datalist.

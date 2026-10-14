@@ -1,4 +1,4 @@
-# NIBE Control 0.10.1
+# NIBE Control 0.10.2
 
 ## Neu in 0.5.0
 Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
@@ -124,7 +124,7 @@ Die Bildschirmaufnahme von 0.9 belegt Darstellung und Bedienung auf einem Androi
 
 ## Excel-Export ab 0.10.1
 
-**Verläufe → 6 / 12 / 24 Stunden auswählen → Excel herunterladen.** Exportiert werden zugeordnete numerische Temperaturen (auch Raumtemperatur), Leistungen, Frequenzen, Volumenstrom, Gradminuten und Ventilatorprozente mit Recorderdaten. Reine Statuscodes sind keine Messgrößen und werden nicht in diese Tabelle aufgenommen.
+**Verläufe → 6 / 12 / 24 Stunden auswählen → **Excel**.** Exportiert werden zugeordnete numerische Temperaturen (auch Raumtemperatur), Leistungen, Frequenzen, Volumenstrom, Gradminuten und Ventilatorprozente mit Recorderdaten. Reine Statuscodes sind keine Messgrößen und werden nicht in diese Tabelle aufgenommen.
 
 Die XLSX-Datei enthält **Zeitreihe**, **Zustandswechsel** und **Zuordnung**. Zeitreihe besitzt eine gemeinsame Zeitachse; Zustände gelten bis zur nächsten Änderung. Unbekannte Abschnitte bleiben leer und werden nicht zu Null. Zeiten/Einheiten/Entity-IDs sind enthalten; die UTC-Spalte löst Sommerzeit-Doppelzeiten auf. Zahlen und Datumswerte sind echte Excel-Zellen. Kein Diagramm-Downsampling, keine lineare Interpolation. Obergrenzen von 50.000 Recorderereignissen und 300.000 Zellen melden einen Fehler statt Werte abzuschneiden; dann einen kürzeren Zeitraum wählen.
 

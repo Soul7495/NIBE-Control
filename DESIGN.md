@@ -62,3 +62,6 @@ Drei beschriftete Schritte in der bestehenden Einstellungsansicht: Anlage, Messw
 
 ## Livecheck 0.10.1
 Der Einrichtungseinstieg ist ein ruhiges 44-px-Zahnrad im Header, kein zusätzlicher Hauptbutton zwischen Kacheln und Tabs. Die Seitenhierarchie und bestehende HA-Palette bleiben erhalten. Zuordnung verwendet native Selects für Modus und Entity; plattformeigene Popup-Geometrie ist akzeptiert. Lange Entitynamen sind in der Popup-Liste vollständig erreichbar. Diagnosehilfe ist aufklappbar. Excel-Export ist eine sekundäre Aktion neben dem Zeitraum, mit eigener Statuszeile und stabiler Buttonbreite.
+
+## Exportleiste 0.10.2
+Gemeinsames Zweispaltenraster: Zeitraum füllt die linke Spalte, die sekundäre Excel-Aktion besitzt rechts 94 px. Auswahlfeld und Aktion sind 44 px hoch und an derselben Unterkante ausgerichtet. 18-px-Excel-Symbol plus kurzer Text, transparente Oberfläche und sekundäre Textfarbe. Busy-Beschriftung bleibt im selben Rahmen; leere Rückmeldung erzeugt keinen Abstand. Bestehende Tokens bleiben unverändert.
