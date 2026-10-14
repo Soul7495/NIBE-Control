@@ -1,4 +1,4 @@
-# NIBE Control 0.9.0
+# NIBE Control 0.9.1
 
 ## Neu in 0.5.0
 Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
@@ -70,7 +70,7 @@ ERS S40-400: GQ2 / Register 30136 ist Abluft, GQ3 / 30137 Zuluft. Luftwege beweg
 
 ### Verifizierung
 
-64 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
+69 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
 
 ## UI 0.8
 Kompakte Übersicht, Warmwasserbedienung aufklappbar, technische Details eingeklappt. Verläufe trennen Hz und kW und verwenden echte Zeitstempel. Diagramme antippen oder den Zeitregler nutzen; Legenden schalten einzelne Reihen. Einstellungen enthält den Datencheck. Lüfterwerte sind Ventilatorprozente und kein gemessener Volumenstrom. Liveprüfung in HA und auf Zielgeräten steht noch aus.
@@ -78,7 +78,7 @@ Kompakte Übersicht, Warmwasserbedienung aufklappbar, technische Details eingekl
 ## Diagrammkorrektur 0.8.1
 Recorder-Zustände werden bis zur nächsten Änderung horizontal gehalten; Sprünge werden vertikal gezeichnet. Konstante Werte wie Vorlauf Soll 31 °C reichen bis zum abgefragten Zeitfensterende. Unbekannte Zustände unterbrechen die Kurve. Die Y-Achse steht links, Minimum unten; Zeitmarken folgen der HA-Zeitzone. Die Messwertprüfung liest die ungekürzten Ereignisse.
 
-Funktionsprüfung: 64 automatisierte Tests für Historie, Rendering, Discovery, Betriebszustände, SG Ready/EVCC, sichere Bedienung, Fehler-/Offlinefälle, Navigation und Filterwartung. Build/Syntax und statischer UI-Audit bestanden. Echte HA-Livewerte und visuelle Smartphone-/Tablet-Prüfung sind weiterhin offen; die Browserumgebung blockiert lokale HTML-Vorschauen.
+Funktionsprüfung: 69 automatisierte Tests für Historie, Rendering, Discovery, Betriebszustände, SG Ready/EVCC, sichere Bedienung, Fehler-/Offlinefälle, Navigation und Filterwartung. Build/Syntax und statischer UI-Audit bestanden. Echte HA-Livewerte und visuelle Smartphone-/Tablet-Prüfung sind weiterhin offen; die Browserumgebung blockiert lokale HTML-Vorschauen.
 
 ## 0.9: Verläufe auswerten
 - Zeitraum 6, 12 oder 24 Stunden auswählen. Die Zeitachse und Einheit sind direkt am Diagramm sichtbar.
@@ -98,3 +98,8 @@ Bestehende manuelle `mappings` behalten Vorrang, auch bei Registry-Ausfall. Mehr
 
 ## Prüfgrenzen
 Tests führen die ausgelieferte dist-Komponente aus. Echte Home-Assistant-Integration, Mobil-/Tablet-Rendering und reale Hardwareaktionen müssen weiterhin live geprüft werden. Keine gefährlichen Register sind neu bedienbar.
+
+## Video-Fixes 0.9.1
+Registry-bestätigte Sensor-/Number-Aliase desselben Registers und Geräts werden zusammengeführt. Bevorzugt wird der aktive kanonische Entity-Typ; Gradminuten bleiben ausschließlich lesbar. Echte Mehrdeutigkeiten zeigen die Kandidaten. EVCC-Smart-Modus und inaktive PV-Aktion sind verständlich beschriftet, die doppelte Modusanzeige ist entfernt. Diagnose zeigt Verdichter-/Prioritäts-/SG-/Alarmdaten sowie elektrische Leistung zum Vergleich. Ein offener Auswertungsbereich bleibt bei Historienaktualisierung offen.
+
+Die Bildschirmaufnahme von 0.9 belegt Darstellung und Bedienung auf einem Android-Smartphone. Sie bestätigt keine neue Liveprüfung des 0.9.1-Builds oder anderer Zielgeräte. SG-Modus 31912 bleibt bei fehlenden Kontakten ein Rohcode; die gefundene Bibliotheks-Code-Tabelle gilt ausdrücklich für S1155/S1255 und wird nicht auf VVM S320 übertragen.
