@@ -34,3 +34,16 @@ test("compressor animation and mobile plant remain centered",()=>{
   assert.match(source,/--machine-col:104px/);
   assert.match(source,/@keyframes flow\{from\{left:-18px\}to\{left:100%\}\}/);
 });
+test('multiple NIBE installations require selection and never depend on registry order',()=>{
+ const rows=[{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'a-30002',entity_id:'sensor.a'},{platform:'nibe_heatpump',config_entry_id:'b',unique_id:'b-30002',entity_id:'sensor.b'}];
+ assert.equal(resolveRoles(rows).outdoor,null);assert.equal(resolveRoles(rows,{},'a').outdoor,'sensor.a');assert.equal(resolveRoles(rows.reverse(),{},'a').outdoor,'sensor.a');
+});
+test('another integration cannot win a NIBE register mapping',()=>{
+ const rows=[{platform:'other',config_entry_id:'other',unique_id:'other-30002',entity_id:'sensor.wrong'},{platform:'nibe_heatpump',config_entry_id:'nibe',unique_id:'nibe-30002',entity_id:'sensor.correct'}];assert.equal(resolveRoles(rows).outdoor,'sensor.correct');
+});
+test('renamed climate entity supplies room temperature within selected installation',()=>{
+ const rows=[{platform:'nibe_heatpump',config_entry_id:'a',entity_id:'climate.renamed',unique_id:'a-climate'}];assert.equal(resolveRoles(rows,{},'a').room,'climate.renamed');assert.equal(resolveRoles(rows,{},'a').climate,'climate.renamed');
+});
+test('duplicate registers inside one installation are unresolved, not guessed',()=>{
+ const rows=[{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'x-30002',entity_id:'sensor.first'},{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'y-30002',entity_id:'sensor.second'}];assert.equal(resolveRoles(rows).outdoor,null);assert.equal(resolveRoles(rows,{outdoor:'sensor.first'}).outdoor,'sensor.first');
+});
