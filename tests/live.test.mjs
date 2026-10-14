@@ -4,8 +4,7 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 function fixture(){
  const classes=new Map();
- const stateSource=readFileSync(new URL('../src/state.js',import.meta.url),'utf8').replace(/export /g,'');
- const source=readFileSync(new URL('../src/nibe-control.js',import.meta.url),'utf8').replace(/^import .*state.js.*;\n/m,stateSource);
+ const source=readFileSync(new URL('../dist/nibe-control.js',import.meta.url),'utf8');
  vm.runInNewContext(source,{document:{createElement:()=>({style:{setProperty(){}},dataset:{},attributes:{},setAttribute(k,v){this.attributes[k]=v;},getAttribute(k){return this.attributes[k];}})},HTMLElement:class{},window:{},customElements:{get:k=>classes.get(k),define:(k,v)=>classes.set(k,v)},Intl});
  const card=new (classes.get('nibe-control-card'))();
  const make=dataset=>({dataset,textContent:'',classList:{values:new Set(),toggle(k,on){on?this.values.add(k):this.values.delete(k);}},closest(){return this;}});
@@ -87,12 +86,27 @@ test('all chart groups request actual mappings including start states',async()=>
 });
 
 test('rendered chart keeps the minimum on the left axis and constant series visible',()=>{
- const {card}=fixture(),buttons=[],paths={};const output={},slider={value:'1440'},svg={};const host={innerHTML:'',querySelector(s){if(s==='output')return output;if(s==='input')return slider;if(s==='svg')return svg;if(s==='.chart-legend')return {append:b=>buttons.push(b)};return paths[s]||(paths[s]={style:{}});}};
+ const {card}=fixture(),buttons=[],paths={};const output={},slider={value:'1440'},svg={};const host={innerHTML:'',querySelector(s){if(s==='.chart-values')return output;if(s==='.chart-probe')return {append(){}};if(s==='[data-cursor]')return {setAttribute(){}};if(s==='input')return slider;if(s==='svg')return svg;if(s==='.chart-legend')return {append:b=>buttons.push(b)};return paths[s]||(paths[s]={style:{}});}};
  const start=Date.parse('2026-10-13T07:00:00Z');card.historyWindow={start,end:start+86400000};card.mapping.supplyTarget='sensor.target';card._hass.states['sensor.target']={state:'31',attributes:{unit_of_measurement:'°C'}};card.shadowRoot.getElementById=()=>host;
  card.draw('heating',[['supplyTarget','#abc']],{'sensor.target':[{s:'31',lu:start/1000}]});
- assert.match(host.innerHTML,/class="chart-y"/);assert.match(host.innerHTML,/class="y-min"/);assert.ok(host.innerHTML.includes('H100.00'));assert.equal(buttons.length,1);assert.equal(buttons[0].disabled,false);assert.match(output.textContent,/31,0 °C/);
+ assert.match(host.innerHTML,/class="chart-y"/);assert.match(host.innerHTML,/class="y-min"/);assert.ok(host.innerHTML.includes('H100.00'));assert.equal(buttons.length,1);assert.equal(buttons[0].disabled,false);assert.match(output.innerHTML,/31,0 °C/);
  buttons[0].onclick();assert.equal(paths['[data-series="supplyTarget"]'].style.display,'none');buttons[0].onclick();assert.equal(paths['[data-series="supplyTarget"]'].style.display,'');
 });
 test('rendered empty history clearly reports missing measurements',()=>{
  const {card}=fixture(),host={innerHTML:''};card.historyWindow={start:0,end:86400000};card.shadowRoot.getElementById=()=>host;card.mapping.supplyTarget='sensor.target';card.draw('heating',[['supplyTarget','#abc']],{});assert.match(host.innerHTML,/Keine Messwerte/);
+});
+test('registry failure preserves manual mappings in the delivered component',async()=>{
+ const {card}=fixture();card.config={mappings:{outdoor:'sensor.custom'}};card._hass.callWS=async()=>{throw Error('no registry');};card.render=()=>{};card.loadHistory=()=>{};await card.init();assert.equal(card.mapping.outdoor,'sensor.custom');assert.equal(card.discoveryError,true);
+});
+test('room missing its numeric attribute is unavailable',()=>{
+ const {card}=fixture();card.mapping.room='climate.room';card._hass.states['climate.room']={state:'auto',attributes:{current_temperature:null}};assert.equal(card.available('room'),false);assert.equal(card.dataState('room'),'Nicht verfügbar');
+});
+test('time inspection synchronizes every chart and preserves an explicit timestamp',()=>{
+ const {card}=fixture(),times=[];card.chartInspectors={heating:t=>times.push(t),frequency:t=>times.push(t),power:t=>times.push(t)};card.inspectTime(123456);assert.equal(times.length,3);assert.ok(times.every(t=>t===123456));assert.equal(card.inspectionTime,123456);card.inspectTime(123457,true);assert.equal(card.inspectionTime,null);
+});
+test('history rejects old responses after an installation change',async()=>{
+ const {card}=fixture();card.mapping.outdoor='sensor.outdoor';card._hass.states['sensor.outdoor']={state:'20',attributes:{}};let resolve,drawn=0;card._hass.callWS=()=>new Promise(r=>resolve=r);card.draw=()=>drawn++;const pending=card.loadHistory();card.historyGeneration++;resolve({});await pending;assert.equal(drawn,0);
+});
+test('a failed history refresh retains the last successful curves',async()=>{
+ const {card}=fixture(),feedback={textContent:''};card.mapping.outdoor='sensor.outdoor';card._hass.states['sensor.outdoor']={state:'20',attributes:{}};card.historyWindow={start:1,end:2};card._hass.callWS=async()=>{throw Error('offline');};card.shadowRoot.querySelector=()=>feedback;let cleared=false;card.shadowRoot.querySelectorAll=()=>{cleared=true;return [];};await card.loadHistory();assert.equal(cleared,false);assert.match(feedback.textContent,/letzten erfolgreichen Stand/);assert.equal(card.historyPending,false);
 });
