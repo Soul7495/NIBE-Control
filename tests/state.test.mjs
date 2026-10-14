@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ncNumber,ncBinary,ncOperating,ncPriority,ncSg,ncEvccMode} from '../src/state.js';
+import {ncNumber,ncBinary,ncOperating,ncPriority,ncSg,ncEvccMode,ncPvAction} from '../src/state.js';
 const values={compressorHz:40,priority:30,alarm:0,defrost:0};
 test('missing and null values never become zero',()=>{
  for(const v of [null,undefined,'','unknown','unavailable'])assert.equal(ncNumber(v),null);
@@ -34,4 +34,8 @@ test('missing SG contacts never invent a decoded numeric mode',()=>assert.equal(
 test('EVCC modes are translated for display',()=>{assert.equal(ncEvccMode('pv'),'PV-Überschuss');assert.equal(ncEvccMode(undefined),'Nicht verfügbar');});
 test('additional heat remains detectable with unavailable compressor frequency',()=>{
  assert.equal(ncOperating({...values,compressorHz:'unavailable',additionalHeat:2}).label,'Heizbetrieb');assert.equal(ncOperating({...values,compressorHz:0,additionalHeat:'unavailable'}).mode,'unknown');
+});
+
+test('EVCC text labels retain raw values for unknown actions',()=>{
+ assert.equal(ncEvccMode('smart'),'Smart-Modus');assert.equal(ncPvAction('inactive'),'Keine PV-Aktion');assert.equal(ncPvAction('unknown'),'Nicht verfügbar');assert.equal(ncPvAction('future-mode'),'Aktion: future-mode');
 });
