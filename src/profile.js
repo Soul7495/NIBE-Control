@@ -52,16 +52,24 @@ export function registerFromUniqueId(uniqueId = "") {
   return String(uniqueId).match(/-(\d{5})$/)?.[1];
 }
 
-export function resolveRoles(registry = [], overrides = {}) {
-  const byRegister = new Map();
-  for (const row of registry) {
-    const register = registerFromUniqueId(row.unique_id);
-    if (register && !byRegister.has(register)) byRegister.set(register, row.entity_id);
-  }
-  return Object.fromEntries(Object.entries(PROFILE.roles).map(([role, spec]) => [role,
-    overrides[role] || (spec.register && byRegister.get(spec.register)) || spec.entity
-  ]));
+export function resolveDiscovery(registry=[],overrides={},entryId=null){
+ const rows=registry.filter(r=>r.platform==='nibe_heatpump'||(!r.platform&&registerFromUniqueId(r.unique_id)));
+ const entries=[...new Set(rows.map(r=>r.config_entry_id).filter(Boolean))];
+ const selected=entryId||(entries.length===1?entries[0]:null),ambiguous=[];
+ const scope=rows.filter(r=>selected?r.config_entry_id===selected:entries.length===0);
+ const mapping={};
+ for(const [role,spec] of Object.entries(PROFILE.roles)){
+  if(overrides[role]){mapping[role]=overrides[role];continue;}
+  if(spec.register){const matches=scope.filter(r=>registerFromUniqueId(r.unique_id)===spec.register);if(matches.length===1)mapping[role]=matches[0].entity_id;else if(matches.length>1){mapping[role]=null;ambiguous.push(role);}else mapping[role]=entries.length?null:spec.entity;continue;}
+  if(spec.group==='optional'){mapping[role]=registry.find(r=>r.entity_id===spec.entity)?.entity_id||spec.entity;continue;}
+  const domain=spec.entity.split('.')[0],matches=scope.filter(r=>r.entity_id.startsWith(domain+'.'));
+  const exact=matches.find(r=>r.entity_id===spec.entity);
+  if(exact)mapping[role]=exact.entity_id;else if(matches.length===1)mapping[role]=matches[0].entity_id;else{mapping[role]=entries.length?null:spec.entity;if(matches.length>1)ambiguous.push(role);}
+ }
+ if(!overrides.room)mapping.room=mapping.climate;
+ return {mapping,entries,selected,ambiguous};
 }
+export function resolveRoles(registry=[],overrides={},entryId=null){return resolveDiscovery(registry,overrides,entryId).mapping;}
 
 export function usableState(state) {
   return !!state && !["unknown", "unavailable", "none", "null", ""].includes(String(state.state).toLowerCase());
