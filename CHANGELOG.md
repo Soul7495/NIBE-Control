@@ -1,3 +1,12 @@
+# 0.9.0
+- Gemeinsamer Zeitcursor und beschriftete Messwerttabellen, 6/12/24 Stunden.
+- Zeitgewichtete Min-/Max-/Mittel-Auswertung mit Datenabdeckung; Verdichterlaufzeit und beobachtete Starts.
+- Historie beim Öffnen, Wiederverbinden und jede Minute bei sichtbaren Charts aktualisieren; alte Kurven bei Fehler behalten, veraltete Antworten verwerfen.
+- Ein kanonisches Geräteprofil, sichere config_entry-Zuordnung, keine zufällige Anlagenmischung; manuelle Overrides bei Registryfehler erhalten.
+- Live-Datencheck, Warmwasserstatus/Steueroptionen und Lüfterteilverfügbarkeit verbessert.
+- Produktprüfungen verwenden das tatsächlich ausgelieferte Bundle.
+- Auswahl mehrerer Installationen ist sitzungsbezogen; dauerhafte config_entry_id ist dokumentiert. Echte HA-/Zielgeräteprüfung offen.
+
 # 0.8.1
 - Behebt Issue #2: Y-Achsenminimum links unten, Plateau-/Stufenkurven statt diagonaler Rampen.
 - Konstante Reihen und letzter Recorder-Zustand bleiben bis zum Zeitraumende sichtbar; unknown/unavailable unterbrechen.
