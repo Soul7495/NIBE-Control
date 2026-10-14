@@ -1,3 +1,10 @@
+# 0.8.1
+- Behebt Issue #2: Y-Achsenminimum links unten, Plateau-/Stufenkurven statt diagonaler Rampen.
+- Konstante Reihen und letzter Recorder-Zustand bleiben bis zum Zeitraumende sichtbar; unknown/unavailable unterbrechen.
+- Beschriftete Zeitmarken und Messwertprüfung aus ungekürzter Historie.
+- Warmwasser-/EVCC-Bedienung erhält Optionsprüfung, Offline-/Duplikatschutz und Fehlerrückmeldung.
+- 53 Tests plus Build/Syntax und statischer Audit bestanden. HA-Livetest und visuelle Zielgeräteprüfung offen.
+
 # 0.8.0
 - Kompaktere Temperatur-, Warmwasser- und Energieansichten; technische Details eingeklappt.
 - Anlagenverteiler und klare Wärmeaktivität; präzise Ventilatorbeschriftungen.
