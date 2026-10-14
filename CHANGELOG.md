@@ -1,3 +1,11 @@
+# 0.9.1
+- 69 Tests, Build, Syntaxprüfung und statischer Audit bestanden; neue Version noch nicht live auf HA/Zielgeräten geprüft.
+- Fix aus Android-Livevideo: sichere Sensor-/Number-Aliasauflösung für Gradminuten; echte Konflikte behalten explizite Kandidaten.
+- EVCC „inactive“/„smart“ beschriften, doppelte Modusanzeige entfernen.
+- Diagnosebeschriftung „Verdichter Soll · Soll“ bereinigen, Raumfühlerregelung Ein/Aus und zusätzliche Betriebs-/Leistungsdaten anzeigen.
+- Aufgeklappte Auswertung bleibt bei Diagrammaktualisierung geöffnet.
+- Keine zusätzliche NIBE-Steuerung; unsichere SG-Codes bleiben technisch bezeichnet.
+
 # 0.9.0
 - Gemeinsamer Zeitcursor und beschriftete Messwerttabellen, 6/12/24 Stunden.
 - Zeitgewichtete Min-/Max-/Mittel-Auswertung mit Datenabdeckung; Verdichterlaufzeit und beobachtete Starts.
