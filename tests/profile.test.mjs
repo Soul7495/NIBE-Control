@@ -47,3 +47,12 @@ test('renamed climate entity supplies room temperature within selected installat
 test('duplicate registers inside one installation are unresolved, not guessed',()=>{
  const rows=[{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'x-30002',entity_id:'sensor.first'},{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'y-30002',entity_id:'sensor.second'}];assert.equal(resolveRoles(rows).outdoor,null);assert.equal(resolveRoles(rows,{outdoor:'sensor.first'}).outdoor,'sensor.first');
 });
+test('sensor and number aliases of the same device/register use canonical domain',()=>{
+ const rows=[{platform:'nibe_heatpump',config_entry_id:'a',device_id:'vvm',unique_id:'a-40012',entity_id:'sensor.degree_minutes'},{platform:'nibe_heatpump',config_entry_id:'a',device_id:'vvm',unique_id:'a-40012',entity_id:'number.degree_minutes'}];assert.equal(resolveRoles(rows).degreeMinutes,'number.degree_minutes');assert.equal(resolveRoles(rows.reverse()).degreeMinutes,'number.degree_minutes');
+});
+test('disabled canonical alias gives way to its enabled same-device sensor',()=>{
+ const rows=[{platform:'nibe_heatpump',config_entry_id:'a',device_id:'vvm',unique_id:'a-40012',entity_id:'number.degree_minutes',disabled_by:'integration'},{platform:'nibe_heatpump',config_entry_id:'a',device_id:'vvm',unique_id:'a-40012',entity_id:'sensor.degree_minutes'}];assert.equal(resolveRoles(rows).degreeMinutes,'sensor.degree_minutes');
+});
+test('same register on different devices remains ambiguous',()=>{
+ const rows=[{platform:'nibe_heatpump',config_entry_id:'a',device_id:'vvm1',unique_id:'a-40012',entity_id:'number.first'},{platform:'nibe_heatpump',config_entry_id:'a',device_id:'vvm2',unique_id:'a-40012',entity_id:'sensor.second'}];assert.equal(resolveRoles(rows).degreeMinutes,null);
+});
