@@ -45,3 +45,6 @@ Werteachse links mit drei geometrisch zum SVG-Raster passenden Beschriftungen, E
 
 ## Auswertung 0.9
 Gemeinsamer Zeitcursor in allen vier Diagrammen. Messwerte in benannten Tabellen statt Fließtext, gleiche Reihenfarben. Achsen und Zeitmarken bleiben im Diagramm. Native Zeitraum-Auswahl, 6/12/24 Stunden; offen gehaltene Statistikauswertung mit Minimum/Maximum/Mittel und Datenabdeckung. Alle Farben kommen aus bestehender Palette, keine externen Fonts oder Chartbibliotheken.
+
+## Video-Review 0.9.1
+Android-Aufnahme als reale Layoutreferenz: doppelte EVCC-Moduszeile entfernen, bekannte Texte deutsch, redundante Soll-Tags vermeiden. Historien-Disclosure bleibt bei Minutenrefresh offen.
