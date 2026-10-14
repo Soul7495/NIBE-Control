@@ -1,4 +1,4 @@
-# NIBE Control 0.8.0
+# NIBE Control 0.8.1
 
 ## Neu in 0.5.0
 Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
@@ -45,7 +45,7 @@ npm run check
 ## Lizenz
 MIT. NIBE ist eine Marke des jeweiligen Rechteinhabers; dieses Community-Projekt ist nicht mit NIBE Energy Systems verbunden.
 
-## Anlagenwahl und Filterwartung ab 0.8.0
+## Anlagenwahl und Filterwartung ab 0.8.1
 
 Der Einstieg zeigt zwei Kacheln: **Wärmepumpe** und **Lüftung**. Wähle eine Anlage; die andere Detailansicht bleibt verborgen. Die Kacheln zeigen Livewerte und erlauben jederzeit den Wechsel. Heizungsdiagramme und Diagnose bleiben in der Wärmepumpenansicht erhalten.
 
@@ -70,7 +70,12 @@ ERS S40-400: GQ2 / Register 30136 ist Abluft, GQ3 / 30137 Zuluft. Luftwege beweg
 
 ### Verifizierung
 
-37 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
+53 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
 
 ## UI 0.8
 Kompakte Übersicht, Warmwasserbedienung aufklappbar, technische Details eingeklappt. Verläufe trennen Hz und kW und verwenden echte Zeitstempel. Diagramme antippen oder den Zeitregler nutzen; Legenden schalten einzelne Reihen. Einstellungen enthält den Datencheck. Lüfterwerte sind Ventilatorprozente und kein gemessener Volumenstrom. Liveprüfung in HA und auf Zielgeräten steht noch aus.
+
+## Diagrammkorrektur 0.8.1
+Recorder-Zustände werden bis zur nächsten Änderung horizontal gehalten; Sprünge werden vertikal gezeichnet. Konstante Werte wie Vorlauf Soll 31 °C reichen bis zum abgefragten Zeitfensterende. Unbekannte Zustände unterbrechen die Kurve. Die Y-Achse steht links, Minimum unten; Zeitmarken folgen der HA-Zeitzone. Die Messwertprüfung liest die ungekürzten Ereignisse.
+
+Funktionsprüfung: 53 automatisierte Tests für Historie, Rendering, Discovery, Betriebszustände, SG Ready/EVCC, sichere Bedienung, Fehler-/Offlinefälle, Navigation und Filterwartung. Build/Syntax und statischer UI-Audit bestanden. Echte HA-Livewerte und visuelle Smartphone-/Tablet-Prüfung sind weiterhin offen; die Browserumgebung blockiert lokale HTML-Vorschauen.
