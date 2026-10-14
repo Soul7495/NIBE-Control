@@ -25,13 +25,14 @@ export function ncOperating(values, connected=true) {
   if (defrost===true) return {mode:'defrost',label:'Abtauung',kind:'unknown',active:false};
   // Undocumented numeric defrost states must not be treated as "off".
   if (ncNumber(values.defrost)>1) return {mode:'unknown',label:`Abtaustatus ${values.defrost}`,kind:'unknown',active:false};
-  if (hz==null) return {mode:'unknown',label:'Betrieb nicht verfügbar',kind:'unknown',active:false};
+  if (hz==null && !(ncNumber(values.additionalHeat)>0)) return {mode:'unknown',label:'Betrieb nicht verfügbar',kind:'unknown',active:false};
   const active=hz>0 || (ncNumber(values.additionalHeat)||0)>0;
   if (active && kind==='water') return {mode:'running',label:'Warmwasserbereitung',kind,active:true};
   if (active && kind==='heat') return {mode:'running',label:'Heizbetrieb',kind,active:true};
   if (active && kind==='cooling') return {mode:'running',label:'Kühlbetrieb',kind,active:true};
   if (active && kind==='pool') return {mode:'running',label:'Poolbetrieb',kind,active:true};
-  if (active) return {mode:'running',label:'Verdichter läuft · Betriebsart unbekannt',kind:'unknown',active:true};
+  if (active) return {mode:'running',label:'Wärmeerzeugung aktiv · Betriebsart unbekannt',kind:'unknown',active:true};
+  if(hz===0&&ncNumber(values.additionalHeat)==null)return {mode:'unknown',label:'Verdichter steht · Heizstabstatus fehlt',kind:'unknown',active:false};
   return {mode:'idle',label:'Bereit · keine Wärmeerzeugung',kind,active:false};
 }
 export function ncSg(values) {
@@ -90,4 +91,12 @@ export function ncHistoryScale(values){
  const nums=values.filter(v=>Number.isFinite(v));if(!nums.length)return null;
  let min=Math.min(...nums),max=Math.max(...nums);if(min===max){const pad=Math.max(.5,Math.abs(min)*.05);min-=pad;max+=pad;}
  return {min,max,span:max-min};
+}
+export function ncHistoryStats(points,start,end){
+ let total=0,duration=0,running=0,starts=0,min=Infinity,max=-Infinity,previous=null;
+ for(let i=0;i<points.length;i++){const p=points[i],next=points[i+1]?.time??end,dt=Math.max(0,Math.min(end,next)-Math.max(start,p.time));
+  if(p.value!=null&&dt>0){min=Math.min(min,p.value);max=Math.max(max,p.value);total+=p.value*dt;duration+=dt;if(p.value>0)running+=dt;if(previous===0&&p.value>0)starts++;}
+  previous=p.value;
+ }
+ return {min:duration?min:null,max:duration?max:null,mean:duration?total/duration:null,coverage:(end>start?duration/(end-start):0),runningHours:running/3600000,starts};
 }
