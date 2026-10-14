@@ -42,3 +42,6 @@ Bestehende HA-Tokens und Schrift bleiben erhalten. Kompakte Temperaturzeile; War
 
 ## Diagrammachsen 0.8.1
 Werteachse links mit drei geometrisch zum SVG-Raster passenden Beschriftungen, Einheit oberhalb. Eine 48-px-Achsenspalte erhält den Platz auf mobilen Geräten. Zeitmarken direkt unter dem Diagramm. Bestehende Farben und Typografie bleiben erhalten.
+
+## Auswertung 0.9
+Gemeinsamer Zeitcursor in allen vier Diagrammen. Messwerte in benannten Tabellen statt Fließtext, gleiche Reihenfarben. Achsen und Zeitmarken bleiben im Diagramm. Native Zeitraum-Auswahl, 6/12/24 Stunden; offen gehaltene Statistikauswertung mit Minimum/Maximum/Mittel und Datenabdeckung. Alle Farben kommen aus bestehender Palette, keine externen Fonts oder Chartbibliotheken.
