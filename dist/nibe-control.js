@@ -1,4 +1,4 @@
-/* NIBE Control 0.9.0 — local Home Assistant dashboard */
+/* NIBE Control 0.9.1 — local Home Assistant dashboard */
 // Register 31029: yozik04/nibe, vvms320_vvms325.json / extensions.json.
 // SG contacts: NIBE VVM S320 installer manual 531158-2, AUX / SG Ready.
 const NC_INVALID = new Set(['unknown','unavailable','none','null','']);
@@ -49,7 +49,7 @@ function ncSg(values) {
   return {label:mapped || (ncNumber(values.sgMode)!=null?`Statuscode ${values.sgMode}`:'Nicht verfügbar'),detail:'SG-Eingänge A/B fehlen oder sind nicht verfügbar. Numerische Modi werden nicht geraten.',tone:'unknown'};
 }
 function ncEvccMode(raw) {
-  return ({off:'Aus',pv:'PV-Überschuss',minpv:'Min. + PV',now:'Sofort'})[String(raw ?? '').toLowerCase()] || (NC_INVALID.has(String(raw ?? '').toLowerCase())?'Nicht verfügbar':String(raw));
+  return ({off:'Aus',pv:'PV-Überschuss',minpv:'Min. + PV',now:'Sofort',smart:'Smart-Modus'})[String(raw ?? '').toLowerCase()] || (NC_INVALID.has(String(raw ?? '').toLowerCase())?'Nicht verfügbar':String(raw));
 }
 // Calendar dates are owned by HA's timezone, independent of the display device.
 function ncToday(timeZone='Europe/Berlin', now=new Date()) {
@@ -101,6 +101,8 @@ function ncHistoryStats(points,start,end){
  }
  return {min:duration?min:null,max:duration?max:null,mean:duration?total/duration:null,coverage:(end>start?duration/(end-start):0),runningHours:running/3600000,starts};
 }
+
+function ncPvAction(raw){const s=String(raw??'').toLowerCase();return ({inactive:'Keine PV-Aktion',active:'PV-Aktion aktiv'})[s]||(NC_INVALID.has(s)?'Nicht verfügbar':`Aktion: ${raw}`);}
 const DEVICE_PROFILE = {
   model: "VVM S320",
   roles: {
@@ -163,7 +165,13 @@ function resolveDiscovery(registry=[],overrides={},entryId=null){
  const mapping={};
  for(const [role,spec] of Object.entries(DEVICE_PROFILE.roles)){
   if(overrides[role]){mapping[role]=overrides[role];continue;}
-  if(spec.register){const matches=scope.filter(r=>registerFromUniqueId(r.unique_id)===spec.register);if(matches.length===1)mapping[role]=matches[0].entity_id;else if(matches.length>1){mapping[role]=null;ambiguous.push(role);}else mapping[role]=entries.length?null:spec.entity;continue;}
+  if(spec.register){const matches=scope.filter(r=>registerFromUniqueId(r.unique_id)===spec.register);let candidate=matches.length===1?matches[0]:null;
+   // Sensor/number aliases are safe only with identical registry identity and device.
+   if(matches.length>1&&matches[0].device_id&&matches.every(r=>r.unique_id===matches[0].unique_id&&r.device_id===matches[0].device_id)){
+    const enabled=matches.filter(r=>!r.disabled_by),pool=enabled.length?enabled:matches,domain=spec.entity.split('.')[0],preferred=pool.filter(r=>r.entity_id.startsWith(domain+'.'));
+    if(preferred.length===1)candidate=preferred[0];else if(pool.length===1)candidate=pool[0];
+   }
+   if(candidate)mapping[role]=candidate.entity_id;else if(matches.length>1){mapping[role]=null;ambiguous.push(role);}else mapping[role]=entries.length?null:spec.entity;continue;}
   if(spec.group==='optional'){mapping[role]=registry.find(r=>r.entity_id===spec.entity)?.entity_id||spec.entity;continue;}
   const domain=spec.entity.split('.')[0],matches=scope.filter(r=>r.entity_id.startsWith(domain+'.'));
   const exact=matches.find(r=>r.entity_id===spec.entity);
@@ -177,8 +185,8 @@ function resolveRoles(registry=[],overrides={},entryId=null){return resolveDisco
 function usableState(state) {
   return !!state && !["unknown", "unavailable", "none", "null", ""].includes(String(state.state).toLowerCase());
 }
-const VERSION = "0.9.0";
-const PROFILE=Object.fromEntries(Object.entries(DEVICE_PROFILE.roles).map(([role,p])=>[role,{r:p.register,e:p.entity,a:p.attribute,l:p.label+(role==='compressorHz'?' Ist':role==='requestedHz'?' Soll':''),t:p.tag,u:p.unit,req:p.group==='recommended'||role==='sgA'||role==='sgB',diag:p.group==='diagnostic',optional:p.group==='optional'}]));
+const VERSION = "0.9.1";
+const PROFILE=Object.fromEntries(Object.entries(DEVICE_PROFILE.roles).map(([role,p])=>[role,{r:p.register,e:p.entity,a:p.attribute,l:p.label+(role==='compressorHz'?' Ist':role==='requestedHz'?' Soll':''),t:['compressorHz','requestedHz'].includes(role)?null:p.tag,u:p.unit,req:p.group==='recommended'||role==='sgA'||role==='sgB',diag:p.group==='diagnostic'||['electrical','compressorHz','compressorStatus','priority','sgMode','alarm','defrost'].includes(role),optional:p.group==='optional'}]));
 const INVALID = new Set(["unknown","unavailable","none","null",""]);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const valid = s => !!s && !INVALID.has(String(s.state).toLowerCase());
@@ -277,17 +285,17 @@ class NibeControlCard extends HTMLElement {
      <i aria-hidden="true"></i>
      <article class="energy-node sg"><ha-icon icon="mdi:transmission-tower-import"></ha-icon><span>SG Ready</span><b data-sg>${esc(sg)}</b></article>
     </div>
-    <div class="energy-facts"><span>PV-Aktion<b data-raw="evccAction"></b></span><span>Anhebung<b>${this.live("evccActionValue")}</b></span><span>EVCC-Modus<b data-raw="evccMode"></b></span><span>Heizstab<b>${this.live("additionalHeat")}</b></span></div>${this.evccControl()}
+    <div class="energy-facts"><span>PV-Aktion<b data-raw="evccAction"></b></span><span>Anhebung<b>${this.live("evccActionValue")}</b></span><span>Heizstab<b>${this.live("additionalHeat")}</b></span></div>${this.evccControl()}
     <details class="technical-details"><summary>SG-Kontakte und Erklärung</summary><div class="sg-contacts"><span>SG A <b data-contact="sgA">—</b></span><span>SG B <b data-contact="sgB">—</b></span></div><p class="energy-explanation" data-energy-explanation></p><p class="hint" data-sg-detail></p></details>
    </section>
   </div><p role="status" aria-live="polite" class="hint" data-control-feedback></p><div class="metric-row">${["supplyTarget","supply","return","hpSupply","degreeMinutes","flow"].map(r=>this.metric(r)).join("")}</div>`;
  }
  evccControl(){return `<label class="mode-control" for="evcc-mode">EVCC-Modus<select id="evcc-mode" disabled></select></label>`;}
  charts(){return `<label class="mode-control" for="history-period">Zeitraum<select id="history-period"><option value="6">6 Stunden</option><option value="12">12 Stunden</option><option value="24" selected>24 Stunden</option></select></label><p class="hint" data-history-feedback role="status">Verläufe werden beim Öffnen und jede Minute aktualisiert. Tippe auf eine Kurve oder bewege den Zeitregler, um alle Messwerte desselben Moments zu vergleichen.</p><div class="chart-grid">${["heating","frequency","power","water"].map(k=>`<section class="panel chart"><div class="chart-head"><div><small data-period-label>${this.historyHours||24} STUNDEN</small><h3>${k==="heating"?"Heizkreis":k==="frequency"?"Verdichterfrequenz":k==="power"?"Elektrische Leistung":"Warmwasser"}</h3></div><span class="legend"></span></div><div class="plot" id="plot-${k}"><div class="loader">Historie wird geladen …</div></div></section>`).join("")}</div>`;}
- dataState(role){if(this.discovery?.ambiguous?.includes(role))return 'Mehrdeutig';if(this.meta?.[role]?.disabled_by)return 'Deaktiviert';return this.available(role)?'Verfügbar':this.meta?.[role]||this.st(role)?'Nicht verfügbar':'Nicht zugeordnet';}
+ dataState(role){if(this.discovery?.ambiguous?.includes(role))return 'Mehrdeutig · manuelle Zuordnung nötig';if(this.meta?.[role]?.disabled_by)return 'Deaktiviert';return this.available(role)?'Verfügbar':this.meta?.[role]||this.st(role)?'Nicht verfügbar':'Nicht zugeordnet';}
  setup(){
   const roles=Object.entries(PROFILE).filter(([,p])=>p.req),ready=roles.filter(([r])=>this.available(r)).length;
-  const rows=roles.sort(([a],[b])=>Number(this.available(a))-Number(this.available(b))).map(([r,p])=>`<li><span><b>${esc(p.l)}</b><em data-check="${r}">${this.dataState(r)}</em><details class="technical-details"><summary>Entity anzeigen</summary><small data-entity="${r}">${esc(this.mapping[r])}</small></details></span></li>`).join('');
+  const rows=roles.sort(([a],[b])=>Number(this.available(a))-Number(this.available(b))).map(([r,p])=>`<li><span><b>${esc(p.l)}</b><em data-check="${r}">${this.dataState(r)}</em><details class="technical-details"><summary>Entity anzeigen</summary><small data-entity="${r}">${esc(this.mapping[r])}</small><small data-candidates="${r}"></small></details></span></li>`).join('');
   return `<section class="panel setup"><div class="title"><div><small>EINRICHTUNG</small><h2>Zuordnung und Datencheck</h2></div><span class="score">${ready}/${roles.length}</span></div><label class="mode-control" for="installation">NIBE-Installation<select id="installation"><option value="">${this.discovery?.entries?.length>1?'Bitte auswählen':'Automatisch'}</option>${(this.discovery?.entries||[]).map(id=>`<option value="${esc(id)}" ${id===this.discovery.selected?'selected':''}>${esc(this.devices?.find(d=>d.config_entries?.includes(id))?.name||'NIBE')} · ${esc(id.slice(-6))}</option>`).join('')}</select></label><p class="hint">Auswahl gilt für diese Sitzung. Dauerhaft: config_entry_id in der Dashboard-Strategie speichern. Bestehende manuelle Zuordnungen haben Vorrang.</p><p data-discovery-error>${this.discoveryError?'Registry nicht erreichbar. Manuelle Zuordnungen bleiben erhalten.':''}</p><p data-setup-score>${ready} von ${roles.length} empfohlenen Datenpunkten verfügbar. Fehlende Werte stehen zuerst.</p><ul>${rows}</ul><aside><b>Deaktivierte Werte aktivieren:</b> Einstellungen → Geräte & Dienste → NIBE Heat Pump → Gerät → Entitäten. „Deaktivierte Entitäten anzeigen“, gewünschte Entity öffnen und aktivieren. Nicht verfügbare Werte benötigen eine Prüfung der Integration.</aside></section>`;
  }
  diagnostics(){
@@ -300,7 +308,7 @@ class NibeControlCard extends HTMLElement {
    <details class="technical-details"><summary>Lüftungsdaten</summary><p class="hint">Die Prozentwerte beschreiben die Ventilatoren, nicht gemessene Luftmengen. Bewegung zeigt Ventilatoraktivität. Rotorbetrieb und Lufttemperaturen sind nicht verfügbar.</p><p>Lüftermodus (Rohwert): <span data-diagnostic="ventilationMode"></span></p></details>
    <div class="vent-maintenance"><div><h3>Filterwartung</h3><p data-filter-last></p><p data-filter-due></p><b data-filter-status></b></div><button type="button" id="filter-change">Filterwechsel erfassen</button></div>
    <p class="hint" data-filter-help></p><details class="filter-settings"><summary>Filterwartung einrichten / ändern</summary><form novalidate id="filter-settings-form"><label for="filter-months">Wechselintervall in Monaten</label><input id="filter-months" type="number" min="1" max="24" step="1" inputmode="numeric" aria-describedby="filter-settings-help"><label for="filter-last-date">Letzter tatsächlicher Filterwechsel</label><input id="filter-last-date" type="date" max="${this.filterToday()}" aria-describedby="filter-settings-help"><p id="filter-settings-help">Intervall aus deiner NIBE-Einstellung übernehmen. Ist das Wechseldatum unbekannt, erst nach dem nächsten tatsächlichen Wechsel einrichten. Beim ersten Speichern werden zwei HA-Helfer angelegt; dafür sind Administratorrechte nötig.</p><p role="alert" id="filter-settings-error"></p><button type="submit">Einstellungen übernehmen</button></form></details><p class="hint" role="status" aria-live="polite" data-maintenance-feedback></p>
-   <p class="hint">Lüfterstufe und Automatik sind über die vorhandenen Entitäten noch nicht sicher bedienbar. Die eingestellten Stufenprozente bleiben unverändert.</p>
+   <p class="hint">Lüftersteuerung noch nicht verfügbar: Der vorhandene Entity-Satz enthält keinen vollständigen belegten Steuerweg.</p>
    <dialog id="maintenance-confirm" aria-labelledby="maintenance-title" aria-describedby="maintenance-description"><h3 id="maintenance-title">Filterwechsel bestätigen?</h3><p id="maintenance-description"></p><p role="alert" data-maintenance-error></p><div class="vent-actions"><button type="button" id="maintenance-cancel" autofocus>Abbrechen</button><button type="button" id="maintenance-save">Ja, Filterwechsel speichern</button></div></dialog>
   </section><style>
    .ventilation-panel{margin-top:12px}.vent-heading,.vent-maintenance{display:flex;justify-content:space-between;align-items:center;gap:16px}.vent-heading small{color:var(--secondary-text-color);font-size:.68rem;letter-spacing:.15em}.vent-heading h3{margin-top:5px}.vent-heading>span{font-size:.78rem;color:var(--secondary-text-color)}
@@ -402,6 +410,7 @@ class NibeControlCard extends HTMLElement {
   if(!this.shadowRoot?.querySelector("main"))return;
   this.paintVentilation();
   this.shadowRoot.querySelectorAll('[data-entity]').forEach(el=>el.textContent=this.mapping[el.dataset.entity]||'Keine eindeutige Zuordnung');
+  this.shadowRoot.querySelectorAll('[data-candidates]').forEach(el=>{const role=el.dataset.candidates;el.textContent=this.discovery?.ambiguous?.includes(role)?(this.registry||[]).filter(row=>row.config_entry_id===this.discovery.selected&&reg(row.unique_id)===PROFILE[role].r).map(row=>row.entity_id).join(' · '):'';});
   this.shadowRoot.querySelectorAll('[data-check]').forEach(el=>el.textContent=this.dataState(el.dataset.check));
   const recommended=Object.entries(PROFILE).filter(([,p])=>p.req),ready=recommended.filter(([r])=>this.available(r)).length;
   const score=this.shadowRoot.querySelector('.score');if(score)score.textContent=ready+'/'+recommended.length;
@@ -409,12 +418,12 @@ class NibeControlCard extends HTMLElement {
 
   for(const [id,role,optionKey] of [['hw-mode','waterHeater','operation_list'],['evcc-mode','evccMode','options']]){const el=this.shadowRoot.getElementById?.(id);if(el&&!this.controlPending?.[role]){const options=this.st(role)?.attributes?.[optionKey]||[];const signature=JSON.stringify(options);if(el.dataset&&el.dataset.options!==signature){el.replaceChildren(...options.map(value=>{const option=document.createElement('option');option.value=value;option.textContent=role==='evccMode'?ncEvccMode(value):String(value);return option;}));el.dataset.options=signature;}el.disabled=this._hass.connected===false||!this.available(role)||!options.length;if(this.available(role))el.value=this.val(role);}}
   const waterHelp=this.shadowRoot.querySelector('[data-water-control-help]');if(waterHelp)waterHelp.textContent=this.st('waterHeater')?.attributes?.operation_list?.length?'Nur die von Home Assistant angebotenen Modi sind bedienbar.':'Kein schaltbarer Warmwassermodus verfügbar.';
-  this.shadowRoot.querySelectorAll('[data-diagnostic]').forEach(el=>{const r=el.dataset.diagnostic;el.textContent=this.available(r)?PROFILE[r].u?this.value(r):String(this.val(r)):'—';});
+  this.shadowRoot.querySelectorAll('[data-diagnostic]').forEach(el=>{const r=el.dataset.diagnostic;el.textContent=this.available(r)?r==='useRoomSensor'?(ncBinary(this.val(r))==null?'Nicht verfügbar':ncBinary(this.val(r))?'Ein':'Aus'):PROFILE[r].u?this.value(r):r==='alarm'?(ncNumber(this.val(r))===0?'Kein Alarm':'Alarm '+this.val(r)):ncNumber(this.val(r))!=null?'Statuscode '+this.val(r):String(this.val(r)):'—';});
   this.shadowRoot.querySelectorAll('[data-quality]').forEach(el=>el.textContent=el.tagName==='EM'&&this.available(el.dataset.quality)?'':this.dataState(el.dataset.quality));
   this.shadowRoot.querySelectorAll("[data-role]").forEach(el=>el.textContent=this.value(el.dataset.role,Number(el.dataset.digits??1)));
   this.shadowRoot.querySelectorAll("[data-status]").forEach(el=>el.textContent=this.available(el.dataset.status)?statusLabel(el.dataset.status,this.val(el.dataset.status)):"Nicht verfügbar");
   this.shadowRoot.querySelectorAll("[data-state]").forEach(el=>{const role=el.dataset.state,on=ncBinary(this.val(role));el.textContent=on==null?'Nicht verfügbar':role==="evccCharging"?(on?"Aktiv":"Keine"):(on?"Freigegeben":"Aus");el.closest(".energy-node")?.classList.toggle("is-active",on===true);});
-  this.shadowRoot.querySelectorAll("[data-raw]").forEach(el=>el.textContent=el.dataset.raw==='evccMode'?ncEvccMode(this.val('evccMode')):this.available(el.dataset.raw)?(['hotWaterMode','moreHotWater'].includes(el.dataset.raw)&&ncNumber(this.val(el.dataset.raw))!=null?'Statuscode '+this.val(el.dataset.raw):({off:'Aus',on:'Ein'})[this.val(el.dataset.raw)]||String(this.val(el.dataset.raw)??'—')):'Nicht verfügbar');
+  this.shadowRoot.querySelectorAll("[data-raw]").forEach(el=>el.textContent=el.dataset.raw==='evccMode'?ncEvccMode(this.val('evccMode')):el.dataset.raw==='evccAction'?ncPvAction(this.val('evccAction')):this.available(el.dataset.raw)?(['hotWaterMode','moreHotWater'].includes(el.dataset.raw)&&ncNumber(this.val(el.dataset.raw))!=null?'Statuscode '+this.val(el.dataset.raw):({off:'Aus',on:'Ein'})[this.val(el.dataset.raw)]||String(this.val(el.dataset.raw)??'—')):'Nicht verfügbar');
   const operation=this.operation(), main=this.shadowRoot.querySelector('main');
   main.className=`app ${operation.mode}`;
   this.shadowRoot.querySelectorAll('[data-operation]').forEach(el=>el.textContent=operation.label);
@@ -451,7 +460,8 @@ class NibeControlCard extends HTMLElement {
   const nums=found.flatMap(x=>x.points.filter(p=>p.value!=null).map(p=>p.value));
   if(!nums.length){host.innerHTML='<div class="empty">Keine Messwerte im Zeitraum verfügbar</div>';return;}
   const scale=ncHistoryScale(nums);if(['frequency','power'].includes(key)&&scale.min<0&&nums.every(n=>n>=0)){scale.min=0;scale.span=scale.max-scale.min;}const {min,max,span}=scale,unit=this.unit(found.find(x=>x.points.some(p=>p.value!=null)).r);
-  host.innerHTML=`<div class="chart-unit">${esc(unit)} · ${this.historyHours||24} Stunden</div><div class="chart-frame"><div class="chart-y" aria-label="Werteachse"><span class="y-max">${fmt(max)}</span><span class="y-mid">${fmt((max+min)/2)}</span><span class="y-min">${fmt(min)}</span></div><svg viewBox="0 0 100 48" preserveAspectRatio="none" aria-label="24-Stunden-Verlauf"><g class="gridlines"><path d="M0 6H100M0 25H100M0 44H100"/></g><line data-cursor x1="100" x2="100" y1="6" y2="44" stroke="var(--primary-text-color)" stroke-width=".3" stroke-dasharray="1 1"/>${found.map(x=>`<path data-series="${x.r}" d="${ncHistoryPath(x.points,window.start,window.end,min,span)}" stroke="${x.c}"/>`).join('')}</svg></div><div class="chart-time">${[0,.25,.5,.75,1].map(f=>`<small>${esc(new Intl.DateTimeFormat('de-DE',{timeZone:this._hass.config?.time_zone||'Europe/Berlin',hour:'2-digit',minute:'2-digit'}).format(new Date(window.start+f*(window.end-window.start))))}</small>`).join('')}</div><details class="history-stats"><summary>Auswertung des Zeitraums</summary><table><thead><tr><th>Messwert</th><th>Minimum</th><th>Maximum</th><th>Mittel</th></tr></thead><tbody>${found.map(x=>{const stat=ncHistoryStats(x.raw,window.start,window.end);return `<tr><th scope="row">${esc(PROFILE[x.r].l)}</th><td>${stat.min==null?'—':fmt(stat.min)}</td><td>${stat.max==null?'—':fmt(stat.max)}</td><td>${stat.mean==null?'—':fmt(stat.mean)}</td></tr><tr><td colspan="4">${esc(this.unit(x.r))} · Datenabdeckung ${fmt(stat.coverage*100,0)} %${key==='frequency'?' · Laufzeit '+fmt(stat.runningHours)+' h · '+stat.starts+' beobachtete Starts':''}</td></tr>`;}).join('')}</tbody></table><p class="hint">Mittelwerte sind zeitgewichtet; unbekannte Abschnitte werden ausgeschlossen. Starts zählen nur belegte Wechsel von 0 auf eine positive Frequenz.</p></details><div class="chart-legend"></div><label class="chart-probe">Zeitpunkt prüfen<input type="range" min="0" max="1440" value="1440" aria-label="Zeitpunkt im 24-Stunden-Verlauf"></label><div class="chart-values" role="status" aria-live="polite"></div><div class="axis"><small>vor ${this.historyHours||24} h</small><small>jetzt</small></div>`;
+  const statsOpen=host.querySelector('.history-stats')?.open||false;
+  host.innerHTML=`<div class="chart-unit">${esc(unit)} · ${this.historyHours||24} Stunden</div><div class="chart-frame"><div class="chart-y" aria-label="Werteachse"><span class="y-max">${fmt(max)}</span><span class="y-mid">${fmt((max+min)/2)}</span><span class="y-min">${fmt(min)}</span></div><svg viewBox="0 0 100 48" preserveAspectRatio="none" aria-label="24-Stunden-Verlauf"><g class="gridlines"><path d="M0 6H100M0 25H100M0 44H100"/></g><line data-cursor x1="100" x2="100" y1="6" y2="44" stroke="var(--primary-text-color)" stroke-width=".3" stroke-dasharray="1 1"/>${found.map(x=>`<path data-series="${x.r}" d="${ncHistoryPath(x.points,window.start,window.end,min,span)}" stroke="${x.c}"/>`).join('')}</svg></div><div class="chart-time">${[0,.25,.5,.75,1].map(f=>`<small>${esc(new Intl.DateTimeFormat('de-DE',{timeZone:this._hass.config?.time_zone||'Europe/Berlin',hour:'2-digit',minute:'2-digit'}).format(new Date(window.start+f*(window.end-window.start))))}</small>`).join('')}</div><details class="history-stats" ${statsOpen?'open':''}><summary>Auswertung des Zeitraums</summary><table><thead><tr><th>Messwert</th><th>Minimum</th><th>Maximum</th><th>Mittel</th></tr></thead><tbody>${found.map(x=>{const stat=ncHistoryStats(x.raw,window.start,window.end);return `<tr><th scope="row">${esc(PROFILE[x.r].l)}</th><td>${stat.min==null?'—':fmt(stat.min)}</td><td>${stat.max==null?'—':fmt(stat.max)}</td><td>${stat.mean==null?'—':fmt(stat.mean)}</td></tr><tr><td colspan="4">${esc(this.unit(x.r))} · Datenabdeckung ${fmt(stat.coverage*100,0)} %${key==='frequency'?' · Laufzeit '+fmt(stat.runningHours)+' h · '+stat.starts+' beobachtete Starts':''}</td></tr>`;}).join('')}</tbody></table><p class="hint">Mittelwerte sind zeitgewichtet; unbekannte Abschnitte werden ausgeschlossen. Starts zählen nur belegte Wechsel von 0 auf eine positive Frequenz.</p></details><div class="chart-legend"></div><label class="chart-probe">Zeitpunkt prüfen<input type="range" min="0" max="1440" value="1440" aria-label="Zeitpunkt im 24-Stunden-Verlauf"></label><div class="chart-values" role="status" aria-live="polite"></div><div class="axis"><small>vor ${this.historyHours||24} h</small><small>jetzt</small></div>`;
   const output=host.querySelector('.chart-values'),slider=host.querySelector('input'),cursor=host.querySelector('[data-cursor]');
   this.chartInspectors=this.chartInspectors||{};
   const inspect=time=>{const fraction=Math.max(0,Math.min(1,(time-window.start)/(window.end-window.start)));slider.value=String(Math.round(fraction*1440));const x=(fraction*100).toFixed(2);cursor?.setAttribute('x1',x);cursor?.setAttribute('x2',x);
