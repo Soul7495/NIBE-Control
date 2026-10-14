@@ -32,6 +32,14 @@
 
 # Changelog
 
+## 0.10.1
+- Ruhiges Einstellungszahnrad im Header; keine dominante Einrichtungsschaltfläche oder erzwungene Ersteinrichtung.
+- Manuelle Zuordnung über echte native Auswahl aktivierter, kompatibler Entities statt Android-Datalist.
+- Diagnose mit Quellen-/Aktivierungshilfe und direktem Sprung zur Zuordnung; belegte OFF-/Abtaubeschriftung verständlich.
+- Lokaler XLSX-Export der 6-/12-/24-Stunden-Recorderdaten, einschließlich Raumtemperatur und numerischer Diagnosewerte.
+- Vollständiges UI-/Funktionsreview vor Veröffentlichung, 95 Tests und unabhängige Excel-Dateiprüfung.
+
+
 ## 0.10.0
 - Community-Einrichtungsassistent mit Profil-, Installations- und manueller Entity-Auswahl direkt im Dashboard.
 - Dauerhafte Dashboard-Speicherung mit Rückprüfung, Konflikterkennung und klaren Fehlerzuständen.

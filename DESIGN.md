@@ -59,3 +59,6 @@ Drei beschriftete Schritte in der bestehenden Einstellungsansicht: Anlage, Messw
 | Raum aus Climate | Auch frei gewählter Temperatursensor | Nutzerwunsch, gleiche visuelle Anzeige |
 | Sitzungsbezogene Zuordnung | Speichern in Dashboard-Strategie | Dauerhafte gemeinsame Einrichtung |
 | ERS-Modelltext | Nur bei eindeutig erkanntem ERS-Modell | Keine erfundenen Gerätebezeichnungen |
+
+## Livecheck 0.10.1
+Der Einrichtungseinstieg ist ein ruhiges 44-px-Zahnrad im Header, kein zusätzlicher Hauptbutton zwischen Kacheln und Tabs. Die Seitenhierarchie und bestehende HA-Palette bleiben erhalten. Zuordnung verwendet native Selects für Modus und Entity; plattformeigene Popup-Geometrie ist akzeptiert. Lange Entitynamen sind in der Popup-Liste vollständig erreichbar. Diagnosehilfe ist aufklappbar. Excel-Export ist eine sekundäre Aktion neben dem Zeitraum, mit eigener Statuszeile und stabiler Buttonbreite.

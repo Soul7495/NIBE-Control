@@ -1,4 +1,4 @@
-# NIBE Control 0.10.0
+# NIBE Control 0.10.1
 
 ## Neu in 0.5.0
 Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
@@ -69,7 +69,7 @@ ERS S40-400: GQ2 / Register 30136 ist Abluft, GQ3 / 30137 Zuluft. Luftwege beweg
 
 ### Verifizierung
 
-83 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
+95 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
 
 ## UI 0.8
 Kompakte Übersicht, Warmwasserbedienung aufklappbar, technische Details eingeklappt. Verläufe trennen Hz und kW und verwenden echte Zeitstempel. Diagramme antippen oder den Zeitregler nutzen; Legenden schalten einzelne Reihen. Einstellungen enthält den Datencheck. Lüfterwerte sind Ventilatorprozente und kein gemessener Volumenstrom. Liveprüfung in HA und auf Zielgeräten steht noch aus.
@@ -77,7 +77,7 @@ Kompakte Übersicht, Warmwasserbedienung aufklappbar, technische Details eingekl
 ## Diagrammkorrektur 0.8.1
 Recorder-Zustände werden bis zur nächsten Änderung horizontal gehalten; Sprünge werden vertikal gezeichnet. Konstante Werte wie Vorlauf Soll 31 °C reichen bis zum abgefragten Zeitfensterende. Unbekannte Zustände unterbrechen die Kurve. Die Y-Achse steht links, Minimum unten; Zeitmarken folgen der HA-Zeitzone. Die Messwertprüfung liest die ungekürzten Ereignisse.
 
-Funktionsprüfung: 83 automatisierte Tests für Historie, Rendering, Discovery, Betriebszustände, SG Ready/EVCC, sichere Bedienung, Fehler-/Offlinefälle, Navigation und Filterwartung. Build/Syntax und statischer UI-Audit bestanden. Echte HA-Livewerte und visuelle Smartphone-/Tablet-Prüfung sind weiterhin offen; die Browserumgebung blockiert lokale HTML-Vorschauen.
+Funktionsprüfung: 95 automatisierte Tests für Historie, Rendering, Discovery, Betriebszustände, SG Ready/EVCC, sichere Bedienung, Fehler-/Offlinefälle, Navigation und Filterwartung. Build/Syntax und statischer UI-Audit bestanden. Echte HA-Livewerte und visuelle Smartphone-/Tablet-Prüfung sind weiterhin offen; die Browserumgebung blockiert lokale HTML-Vorschauen.
 
 ## 0.9: Verläufe auswerten
 - Zeitraum 6, 12 oder 24 Stunden auswählen. Die Zeitachse und Einheit sind direkt am Diagramm sichtbar.
@@ -88,11 +88,11 @@ Funktionsprüfung: 83 automatisierte Tests für Historie, Rendering, Discovery, 
 
 ## Community-Einrichtung ab 0.10.0
 
-1. Dashboard öffnen → **Einrichtung / Einstellungen**. Bei noch nicht abgeschlossener Einrichtung öffnet sich der Assistent für Administratoren automatisch.
+1. Dashboard öffnen → **Zahnrad / Einstellungen**. Das Zahnrad oben rechts öffnet die Einstellungen; der Einstieg bleibt die Anlagenübersicht.
 2. Unter **Anlage auswählen** deine NIBE-Installation und das Wärmepumpenprofil wählen. Automatische Erkennung nutzt das Modell aus der Device Registry. Bei mehreren Anlagen die richtige Installation ausdrücklich wählen.
 3. Unter **Messwerte zuordnen** die Funktionsgruppen öffnen. Unter jedem Feld steht der automatische Vorschlag und ob die Entity verfügbar, deaktiviert oder nicht zugeordnet ist.
-4. Eine falsche Zuordnung selbst korrigieren: im jeweiligen Feld eine Entity aus der durchsuchbaren Liste auswählen. Namen und IDs sind enthalten. Beispielsweise **Innen** mit `sensor.wohnzimmer_temperatur` statt der NIBE-Climate-Entity belegen. Die Entity muss wirklich existieren und eine Temperatureinheit besitzen. Keine Beispiel-ID ungeprüft übernehmen.
-5. Leeres Feld = wieder automatisch zuordnen. **Nicht verwenden** = genau diesen Messwert entfernen. Bei anderen Anbindungsarten **NIBE · Individuell** wählen und die vorhandenen Daten selbst zuordnen. Dieses Profil errät keine Register oder numerischen Betriebsarten.
+4. Eine falsche Zuordnung selbst korrigieren: **Manuell zuordnen** wählen und anschließend eine aktivierte, passende Entity aus der Auswahl wählen. Namen und IDs sind enthalten. Beispielsweise **Raumtemperatur** mit `sensor.wohnzimmer_temperatur` statt der NIBE-Climate-Entity belegen. Die Entity muss wirklich existieren und eine Temperatureinheit besitzen. Keine Beispiel-ID ungeprüft übernehmen.
+5. **Automatisch** = wieder den Vorschlag verwenden. **Nicht verwenden** = genau diesen Messwert entfernen. Bei anderen Anbindungsarten **NIBE · Individuell** wählen und die vorhandenen Daten selbst zuordnen. Dieses Profil errät keine Register oder numerischen Betriebsarten.
 6. Unter **Bereiche anzeigen** Warmwasser, Lüftung und PV/EVCC automatisch anzeigen lassen oder bewusst **Ausblenden** wählen. Der Status zeigt auch ausgeblendete und nicht erkannte Funktionen. Eine deaktivierte/unavailable Entity zählt als vorhandene Funktion, erscheint aber ohne erfundene Werte.
 7. **Einrichtung speichern**. Erst die bestätigte Speicherung übernimmt deine Eingaben. Administratorrechte und ein Dashboard im HA-Speichermodus sind erforderlich. Die Konfiguration liegt in Home Assistant und gilt für dieses Dashboard auf allen Displays. Bestehende Wartungshelfer bleiben erhalten.
 8. Nachträgliche Korrekturen erfolgen an derselben Stelle. Bei Fehlern bleiben Eingaben erhalten. Bei einer inzwischen geänderten Einrichtung nichts überschreiben: neu laden und prüfen. YAML-Dashboards und einzelne Karten ohne NIBE-Dashboardstrategie sind weiter lesbar, benötigen aber ihre manuelle YAML-Konfiguration.
@@ -120,4 +120,16 @@ Registry-bestätigte Sensor-/Number-Aliase desselben Registers und Geräts werde
 Die Bildschirmaufnahme von 0.9 belegt Darstellung und Bedienung auf einem Android-Smartphone. Sie bestätigt keine neue Liveprüfung des 0.9.1-Builds oder anderer Zielgeräte. SG-Modus 31912 bleibt bei fehlenden Kontakten ein Rohcode; die gefundene Bibliotheks-Code-Tabelle gilt ausdrücklich für S1155/S1255 und wird nicht auf VVM S320 übertragen.
 
 ## Prüfumfang 0.10.0
-83 Tests einschließlich der ausgelieferten Komponente: Mapping, Ausschluss, Geräteauswahl, W/°F, Speicherung/Rückprüfung, Rechte-/Offline-/Konfliktfälle, Filterwartung, sichere Bedienung und Historie. Build, Syntax und statischer UI-Audit sind geprüft. Neuer Assistent, native Datalist und tatsächliche Speicherung auf deiner Home-Assistant-Instanz benötigen den Livecheck; automatisierte Mocks ersetzen ihn nicht.
+95 Tests einschließlich der ausgelieferten Komponente: Mapping, Ausschluss, Geräteauswahl, W/°F, Speicherung/Rückprüfung, Rechte-/Offline-/Konfliktfälle, Filterwartung, sichere Bedienung und Historie. Build, Syntax und statischer UI-Audit sind geprüft. Neuer Assistent, native Entity-Auswahl und tatsächliche Speicherung auf deiner Home-Assistant-Instanz benötigen den Livecheck; automatisierte Mocks ersetzen ihn nicht.
+
+## Excel-Export ab 0.10.1
+
+**Verläufe → 6 / 12 / 24 Stunden auswählen → Excel herunterladen.** Exportiert werden zugeordnete numerische Temperaturen (auch Raumtemperatur), Leistungen, Frequenzen, Volumenstrom, Gradminuten und Ventilatorprozente mit Recorderdaten. Reine Statuscodes sind keine Messgrößen und werden nicht in diese Tabelle aufgenommen.
+
+Die XLSX-Datei enthält **Zeitreihe**, **Zustandswechsel** und **Zuordnung**. Zeitreihe besitzt eine gemeinsame Zeitachse; Zustände gelten bis zur nächsten Änderung. Unbekannte Abschnitte bleiben leer und werden nicht zu Null. Zeiten/Einheiten/Entity-IDs sind enthalten; die UTC-Spalte löst Sommerzeit-Doppelzeiten auf. Zahlen und Datumswerte sind echte Excel-Zellen. Kein Diagramm-Downsampling, keine lineare Interpolation. Obergrenzen von 50.000 Recorderereignissen und 300.000 Zellen melden einen Fehler statt Werte abzuschneiden; dann einen kürzeren Zeitraum wählen.
+
+Die Erstellung läuft lokal und benötigt vorhandene Recorderhistorie. Wenn die HA-App den Blob-Download nicht zustellt, das Dashboard im Browser öffnen. Der reale Android-/Wall-Display-Download ist noch nicht bestätigt.
+
+## Review vor Release 0.10.1
+
+[Gesamtes UI- und Funktionsreview](docs/REVIEW-0.10.1.md): alle vorhandenen Funktionsbereiche, 95 Tests, Build/Syntax, statischer UI-Audit und unabhängige XLSX-Leseprüfung. Offen bleiben die darin ausdrücklich genannten HA-/Hardware-/Zielgeräte-Livechecks.

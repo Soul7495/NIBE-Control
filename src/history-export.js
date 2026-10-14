@@ -1,0 +1,41 @@
+// Local SpreadsheetML export. Text is always inlineStr, never an executable formula.
+const NC_XLSX_NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+const ncXml=value=>String(value??'').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+function ncColumn(index){let s='';for(index++;index;index=Math.floor((index-1)/26))s=String.fromCharCode(65+(index-1)%26)+s;return s;}
+function ncWorksheet(rows){
+ if(rows.length>1048576)throw new Error('Zu viele Excel-Zeilen. Bitte einen kürzeren Zeitraum wählen.');
+ const cols=rows.reduce((n,row)=>Math.max(n,row.length),1),ref=`A1:${ncColumn(cols-1)}${Math.max(1,rows.length)}`;
+ if(rows.length*cols>300000)throw new Error('Zu viele Zellen für einen mobilen Export. Bitte einen kürzeren Zeitraum wählen.');
+ const body=rows.map((row,r)=>`<row r="${r+1}">${row.map((v,c)=>{if(v==null)return '';const addr=ncColumn(c)+(r+1),style=r===0?1:typeof v==='object'&&v.date!=null?2:0,value=style===2?v.date:v;if(typeof value==='number'&&Number.isFinite(value))return `<c r="${addr}" s="${style}"><v>${value}</v></c>`;return `<c r="${addr}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${ncXml(value)}</t></is></c>`;}).join('')}</row>`).join('');
+ return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="${NC_XLSX_NS}"><dimension ref="${ref}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="2" width="26" customWidth="1"/><col min="3" max="${Math.max(3,cols)}" width="24" customWidth="1"/></cols><sheetData>${body}</sheetData><autoFilter ref="${ref}"/></worksheet>`;
+}
+function ncCrc32(bytes){let crc=0xffffffff;for(const byte of bytes){crc^=byte;for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^0xffffffff)>>>0;}
+export function ncZipStore(files){
+ const encoder=new TextEncoder(),chunks=[],central=[];let offset=0;
+ for(const [name,text] of Object.entries(files)){const path=encoder.encode(name),data=encoder.encode(text),crc=ncCrc32(data),header=new Uint8Array(30+path.length),v=new DataView(header.buffer);v.setUint32(0,0x04034b50,true);v.setUint16(4,20,true);v.setUint16(6,0x800,true);v.setUint16(12,33,true);v.setUint32(14,crc,true);v.setUint32(18,data.length,true);v.setUint32(22,data.length,true);v.setUint16(26,path.length,true);header.set(path,30);chunks.push(header,data);
+  const entry=new Uint8Array(46+path.length),e=new DataView(entry.buffer);e.setUint32(0,0x02014b50,true);e.setUint16(4,20,true);e.setUint16(6,20,true);e.setUint16(8,0x800,true);e.setUint16(14,33,true);e.setUint32(16,crc,true);e.setUint32(20,data.length,true);e.setUint32(24,data.length,true);e.setUint16(28,path.length,true);e.setUint32(42,offset,true);entry.set(path,46);central.push(entry);offset+=header.length+data.length;
+ }
+ const size=central.reduce((n,b)=>n+b.length,0),end=new Uint8Array(22),v=new DataView(end.buffer);v.setUint32(0,0x06054b50,true);v.setUint16(8,central.length,true);v.setUint16(10,central.length,true);v.setUint32(12,size,true);v.setUint32(16,offset,true);const out=new Uint8Array(offset+size+22);let pos=0;for(const b of [...chunks,...central,end]){out.set(b,pos);pos+=b.length;}return out;
+}
+export function ncWorkbook(sheets){
+ const files={'_rels/.rels':'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'};
+ files['[Content_Types].xml']=`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`;
+ files['xl/workbook.xml']=`<workbook xmlns="${NC_XLSX_NS}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s,i)=>`<sheet name="${ncXml(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets></workbook>`;
+ files['xl/_rels/workbook.xml.rels']=`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+ files['xl/styles.xml']=`<styleSheet xmlns="${NC_XLSX_NS}"><numFmts count="1"><numFmt numFmtId="164" formatCode="dd.mm.yyyy hh:mm:ss.000"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+ sheets.forEach((sheet,i)=>files[`xl/worksheets/sheet${i+1}.xml`]=ncWorksheet(sheet.rows));return ncZipStore(files);
+}
+export function ncExcelLocalDate(time,timeZone){
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(time)),get=t=>Number(parts.find(p=>p.type===t).value);
+ return {date:Date.UTC(get('year'),get('month')-1,get('day'),get('hour'),get('minute'),get('second'),((time%1000)+1000)%1000)/86400000+25569};
+}
+export function ncExportTables(series,start,end,timeZone,metadata=[]){
+ const events=series.reduce((n,s)=>n+(s.events||s.points).length,0);if(events>50000)throw new Error('Mehr als 50.000 Zustandswechsel. Bitte einen kürzeren Zeitraum wählen.');
+ const times=[...new Set([start,end,...series.flatMap(s=>s.points.filter(p=>p.time>=start&&p.time<=end).map(p=>p.time))])].sort((a,b)=>a-b),indexes=series.map(()=>-1);
+ const rows=[['Zeitpunkt ('+timeZone+')','Zeitpunkt UTC',...series.map(s=>s.label+' ['+s.unit+']')]];
+ for(const time of times){rows.push([ncExcelLocalDate(time,timeZone),new Date(time).toISOString(),...series.map((s,i)=>{while(indexes[i]+1<s.points.length&&s.points[indexes[i]+1].time<=time)indexes[i]++;return indexes[i]<0?null:s.points[indexes[i]].value;})]);}
+ const raw=[['Zeitpunkt ('+timeZone+')','Zeitpunkt UTC','Messwert','Entity-ID','Wert','Einheit','Qualität']];for(const s of series)for(const p of (s.events||s.points))if(p.time>=start&&p.time<=end)raw.push([ncExcelLocalDate(p.time,timeZone),new Date(p.time).toISOString(),s.label,s.entity,p.value,s.unit,p.value==null?'Nicht verfügbar':'Bekannt']);
+ raw.splice(1,raw.length-1,...raw.slice(1).sort((a,b)=>a[1].localeCompare(b[1])));
+ const info=[['Angabe','Wert'],['Beginn UTC',new Date(start).toISOString()],['Ende UTC',new Date(end).toISOString()],['Zeitzone',timeZone],['Zeitreihe','Zustand gilt bis zur nächsten Änderung; keine lineare Interpolation. Unbekannte Abschnitte bleiben leer.'],['Recorder','Historie, keine Live-Momentaufnahme und kein Downsampling. Erste/letzte Zeile können Zeitfenstergrenzen sein.'],...metadata,...series.map(s=>[s.label+' ['+s.unit+']',s.entity])];
+ return [{name:'Zeitreihe',rows},{name:'Zustandswechsel',rows:raw},{name:'Zuordnung',rows:info}];
+}
