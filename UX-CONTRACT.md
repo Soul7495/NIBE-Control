@@ -48,3 +48,7 @@
 - Frequenz und elektrische Leistung besitzen getrennte Diagramme und Einheiten. Reihen ohne Messwerte werden ausdrücklich bezeichnet. Legendenbuttons schalten Reihen sichtbar/verborgen. Nativer Zeitregler ist die Tastaturalternative zum Antippen eines Diagramms; Messwerte sind mit HA-Zeitzone beschriftet.
 - Kein allgemeines Alterslimit für unveränderte HA-Sensoren: last_changed ist kein Nachweis ausgefallener Abfrage. Offline und unavailable bleiben explizit. Ein transportseitiger Frischebeleg fehlt.
 - Einstellungen besitzt Datencheck; Diagnose enthält WP-Werte, Lüfterrohwert gehört zur Lüftung. Bestehende Bedien-/Wartungsbesitzer bleiben erhalten.
+
+## Historie und Bedienrückmeldung 0.8.1
+Recorder-Zustand gilt bis zur nächsten Änderung (Stufenkurve), letzte bekannte Zahl/unknown wird bis zum Anfrageende fortgeführt. Vor der ersten gelieferten Messung wird kein Zustand erfunden. Konstante Reihen erhalten eine gepolsterte Werteachse. Raw-Historie besitzt Messwertprüfung; reduzierte Punkte besitzen ausschließlich die Kurvengeometrie. `include_start_time_state=true` ist explizit. API-Quelle: home-assistant/core homeassistant/components/history/websocket_api.py, am 2026-10-14 gelesen.
+`setUserControl` ist kanonischer Dispatcher für ausschließlich waterHeater/evccMode mit Domains, angebotenen Optionen, Offlineprüfung, Duplikatschutz und Inline-Fehlern. Erfolgsfeedback bestätigt Übermittlung, nicht die physische Ausführung.
