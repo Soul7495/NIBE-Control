@@ -32,3 +32,6 @@ test('all four documented SG contact combinations',()=>{
 });
 test('missing SG contacts never invent a decoded numeric mode',()=>assert.equal(ncSg({sgMode:3}).label,'Statuscode 3'));
 test('EVCC modes are translated for display',()=>{assert.equal(ncEvccMode('pv'),'PV-Überschuss');assert.equal(ncEvccMode(undefined),'Nicht verfügbar');});
+test('additional heat remains detectable with unavailable compressor frequency',()=>{
+ assert.equal(ncOperating({...values,compressorHz:'unavailable',additionalHeat:2}).label,'Heizbetrieb');assert.equal(ncOperating({...values,compressorHz:0,additionalHeat:'unavailable'}).mode,'unknown');
+});
