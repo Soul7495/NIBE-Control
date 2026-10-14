@@ -1,4 +1,4 @@
-# NIBE Control 0.8.1
+# NIBE Control 0.9.0
 
 ## Neu in 0.5.0
 Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
@@ -70,7 +70,7 @@ ERS S40-400: GQ2 / Register 30136 ist Abluft, GQ3 / 30137 Zuluft. Luftwege beweg
 
 ### Verifizierung
 
-53 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
+64 automatisierte Tests, Build, Syntaxprüfung und statischer UI-Audit bestanden. Echte HA-Helfererstellung, Tastaturbedienung im Browser und visuelle Darstellung auf Smartphone/Tablet/Wall Display müssen noch live geprüft werden.
 
 ## UI 0.8
 Kompakte Übersicht, Warmwasserbedienung aufklappbar, technische Details eingeklappt. Verläufe trennen Hz und kW und verwenden echte Zeitstempel. Diagramme antippen oder den Zeitregler nutzen; Legenden schalten einzelne Reihen. Einstellungen enthält den Datencheck. Lüfterwerte sind Ventilatorprozente und kein gemessener Volumenstrom. Liveprüfung in HA und auf Zielgeräten steht noch aus.
@@ -78,4 +78,23 @@ Kompakte Übersicht, Warmwasserbedienung aufklappbar, technische Details eingekl
 ## Diagrammkorrektur 0.8.1
 Recorder-Zustände werden bis zur nächsten Änderung horizontal gehalten; Sprünge werden vertikal gezeichnet. Konstante Werte wie Vorlauf Soll 31 °C reichen bis zum abgefragten Zeitfensterende. Unbekannte Zustände unterbrechen die Kurve. Die Y-Achse steht links, Minimum unten; Zeitmarken folgen der HA-Zeitzone. Die Messwertprüfung liest die ungekürzten Ereignisse.
 
-Funktionsprüfung: 53 automatisierte Tests für Historie, Rendering, Discovery, Betriebszustände, SG Ready/EVCC, sichere Bedienung, Fehler-/Offlinefälle, Navigation und Filterwartung. Build/Syntax und statischer UI-Audit bestanden. Echte HA-Livewerte und visuelle Smartphone-/Tablet-Prüfung sind weiterhin offen; die Browserumgebung blockiert lokale HTML-Vorschauen.
+Funktionsprüfung: 64 automatisierte Tests für Historie, Rendering, Discovery, Betriebszustände, SG Ready/EVCC, sichere Bedienung, Fehler-/Offlinefälle, Navigation und Filterwartung. Build/Syntax und statischer UI-Audit bestanden. Echte HA-Livewerte und visuelle Smartphone-/Tablet-Prüfung sind weiterhin offen; die Browserumgebung blockiert lokale HTML-Vorschauen.
+
+## 0.9: Verläufe auswerten
+- Zeitraum 6, 12 oder 24 Stunden auswählen. Die Zeitachse und Einheit sind direkt am Diagramm sichtbar.
+- Kurve antippen oder Zeitregler bewegen: Die vertikale Markierung und Messwerttabellen aller Diagramme zeigen denselben Zeitpunkt mit Datum, Uhrzeit, Namen und Einheiten. „Jetzt anzeigen“ kehrt zur aktuellen Randzeit zurück.
+- Heizkreis zeigt die Differenz Vorlauf Ist − Soll. Frequenz zeigt, ob der Verdichter am ausgewählten Zeitpunkt läuft oder steht.
+- „Auswertung des Zeitraums“ zeigt Minimum, Maximum, zeitgewichtetes Mittel und Datenabdeckung. Verdichterlaufzeit und beobachtete Starts stammen ausschließlich aus bekannten Abschnitten. Die Werte sind keine Effizienz-/Fehlerbewertung.
+- Verläufe werden beim Öffnen, bei Wiederverbindung und jede Minute bei sichtbarer Verlaufsansicht aktualisiert. Ein gewählter Zeitpunkt und ausgeblendete Reihen bleiben erhalten. Bei Fehlern bleiben alte Kurven mit einer Fehlermeldung sichtbar.
+
+## Sichere Anlagenzuordnung
+Ein gemeinsames Geräteprofil besitzt Discovery und Anzeige. Es wird nach NIBE-Integration und config_entry abgegrenzt. Bei mehreren Installationen wird keine geraten: Einstellungen → NIBE-Installation auswählen. Die Auswahl ist zunächst sitzungsbezogen. Dauerhaft die echte config_entry_id in der bestehenden Dashboard-Strategie speichern:
+```yaml
+strategy:
+  type: custom:nibe-control
+  config_entry_id: DEINE_NIBE_CONFIG_ENTRY_ID
+```
+Bestehende manuelle `mappings` behalten Vorrang, auch bei Registry-Ausfall. Mehrdeutige Register werden ausdrücklich angezeigt. Nicht registrierbare Steuerfunktionen und unbekannte Codes werden nicht erfunden. Verifiziertes Geräteprofil bleibt VVM S320 / EB101 mit optionaler ERS S40-400; andere Modelle benötigen fachliche Validierung.
+
+## Prüfgrenzen
+Tests führen die ausgelieferte dist-Komponente aus. Echte Home-Assistant-Integration, Mobil-/Tablet-Rendering und reale Hardwareaktionen müssen weiterhin live geprüft werden. Keine gefährlichen Register sind neu bedienbar.
