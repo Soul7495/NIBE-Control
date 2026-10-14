@@ -60,7 +60,13 @@ export function resolveDiscovery(registry=[],overrides={},entryId=null){
  const mapping={};
  for(const [role,spec] of Object.entries(PROFILE.roles)){
   if(overrides[role]){mapping[role]=overrides[role];continue;}
-  if(spec.register){const matches=scope.filter(r=>registerFromUniqueId(r.unique_id)===spec.register);if(matches.length===1)mapping[role]=matches[0].entity_id;else if(matches.length>1){mapping[role]=null;ambiguous.push(role);}else mapping[role]=entries.length?null:spec.entity;continue;}
+  if(spec.register){const matches=scope.filter(r=>registerFromUniqueId(r.unique_id)===spec.register);let candidate=matches.length===1?matches[0]:null;
+   // Sensor/number aliases are safe only with identical registry identity and device.
+   if(matches.length>1&&matches[0].device_id&&matches.every(r=>r.unique_id===matches[0].unique_id&&r.device_id===matches[0].device_id)){
+    const enabled=matches.filter(r=>!r.disabled_by),pool=enabled.length?enabled:matches,domain=spec.entity.split('.')[0],preferred=pool.filter(r=>r.entity_id.startsWith(domain+'.'));
+    if(preferred.length===1)candidate=preferred[0];else if(pool.length===1)candidate=pool[0];
+   }
+   if(candidate)mapping[role]=candidate.entity_id;else if(matches.length>1){mapping[role]=null;ambiguous.push(role);}else mapping[role]=entries.length?null:spec.entity;continue;}
   if(spec.group==='optional'){mapping[role]=registry.find(r=>r.entity_id===spec.entity)?.entity_id||spec.entity;continue;}
   const domain=spec.entity.split('.')[0],matches=scope.filter(r=>r.entity_id.startsWith(domain+'.'));
   const exact=matches.find(r=>r.entity_id===spec.entity);
