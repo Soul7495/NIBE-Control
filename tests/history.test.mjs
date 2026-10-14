@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ncHistoryPoints,ncHistoryPath,ncHistoryValue,ncHistoryScale} from '../src/state.js';
+import {ncHistoryPoints,ncHistoryPath,ncHistoryValue,ncHistoryScale,ncHistoryStats} from '../src/state.js';
 const start=Date.parse('2026-10-07T10:00:00Z'),end=start+86400000;
 test('history uses HA epoch seconds and ISO timestamps at their true position',()=>{
  const pts=ncHistoryPoints([{s:'10',lu:start/1000},{state:'20',last_updated:new Date(start+21600000).toISOString()}],start,end);
@@ -50,4 +50,9 @@ test('inspection reads raw events even when the drawn series is sampled',()=>{
  const rows=Array.from({length:10000},(_,i)=>({s:String(i%70),lu:(start+i*8000)/1000}));
  const raw=ncHistoryPoints(rows,start,end,{sample:false}),sampled=ncHistoryPoints(rows,start,end);
  assert.ok(sampled.length<=600);assert.ok(raw.length>600);assert.equal(ncHistoryValue(raw,start+4444*8000),4444%70);
+});
+
+test('time-weighted analysis excludes unknown segments and counts only observed starts',()=>{
+ const points=[{time:0,value:0},{time:3600000,value:50},{time:7200000,value:null},{time:10800000,value:20},{time:14400000,value:0}];
+ const stats=ncHistoryStats(points,0,14400000);assert.equal(stats.runningHours,2);assert.equal(stats.starts,1);assert.equal(stats.coverage,.75);assert.equal(stats.mean,70/3);assert.equal(stats.min,0);assert.equal(stats.max,50);
 });
