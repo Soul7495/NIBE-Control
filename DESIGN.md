@@ -39,3 +39,6 @@ Eingeklappte Einstellungen im Lüftungsbereich. Native Zahl- und Datumeingabe: P
 
 ## Alltag 0.8
 Bestehende HA-Tokens und Schrift bleiben erhalten. Kompakte Temperaturzeile; Warmwasserbedienung als Disclosure, SG-Details eingeklappt. Leitungen verbinden Gerätepaar und Ziele über einen gemeinsamen Verteiler. Smartphone einspaltig, breitere Displays zweispaltig, keine feste Bildschirmhöhe. Keine Sticky-Navigation unter HA-App-Chrome. Diagnose als Zeilen statt leerer Großkacheln. Lüfterwerte heißen Ventilatorprozente, der Rotor bleibt statisch.
+
+## Diagrammachsen 0.8.1
+Werteachse links mit drei geometrisch zum SVG-Raster passenden Beschriftungen, Einheit oberhalb. Eine 48-px-Achsenspalte erhält den Platz auf mobilen Geräten. Zeitmarken direkt unter dem Diagramm. Bestehende Farben und Typografie bleiben erhalten.
