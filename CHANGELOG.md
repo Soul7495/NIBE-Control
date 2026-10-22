@@ -32,6 +32,13 @@
 
 # Changelog
 
+## 0.10.3
+- Falsche Gleichsetzung von Alarmnummer und aktivem Alarm behoben (Livecheck: Code 366 vs. MyUplink ohne Störung).
+- Nicht bestätigte Alarmnummer bleibt mit Hinweis und ungeklärtem Aktivstatus sichtbar, ohne den Betrieb als bestätigte Störung zu blockieren.
+- Optionaler manueller binary_sensor für einen echten Gesamt-Alarm-Aktivstatus; keine automatische Nutzung des Klasse-1-Registers und kein Reset.
+- Regressionstests für bestätigte/inaktive/fehlende Aktivität, Liveupdates, Alarm ohne Nummer, Abtauung und Offline.
+
+
 ## 0.10.2
 - Zeitraum-Auswahl und Excel-Aktion im gemeinsamen Raster, exakt an der Unterkante ausgerichtet.
 - Kompakter Symbol-/Excel-Button statt großer Exportkachel; gleiche 44-px-Höhe und stabile Breite während des Exports.

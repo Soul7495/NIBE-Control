@@ -6,7 +6,7 @@ export const FEATURE_ROLES = {
 };
 export function entityCompatible(role,id,state,spec){
  const domain=String(id||'').split('.')[0];
- const required={waterHeater:'water_heater',climate:'climate',evccMode:'select',evccEnabled:'binary_sensor',evccCharging:'binary_sensor'}[role];
+ const required={alarmActive:'binary_sensor',waterHeater:'water_heater',climate:'climate',evccMode:'select',evccEnabled:'binary_sensor',evccCharging:'binary_sensor'}[role];
  if(required)return domain===required;
  if(role==='room')return domain==='climate'||(domain==='sensor'&&['°C','°F'].includes(state?.attributes?.unit_of_measurement));
  if(!['sensor','number','binary_sensor','switch'].includes(domain))return false;

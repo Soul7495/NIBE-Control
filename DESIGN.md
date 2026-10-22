@@ -65,3 +65,6 @@ Der Einrichtungseinstieg ist ein ruhiges 44-px-Zahnrad im Header, kein zusätzli
 
 ## Exportleiste 0.10.2
 Gemeinsames Zweispaltenraster: Zeitraum füllt die linke Spalte, die sekundäre Excel-Aktion besitzt rechts 94 px. Auswahlfeld und Aktion sind 44 px hoch und an derselben Unterkante ausgerichtet. 18-px-Excel-Symbol plus kurzer Text, transparente Oberfläche und sekundäre Textfarbe. Busy-Beschriftung bleibt im selben Rahmen; leere Rückmeldung erzeugt keinen Abstand. Bestehende Tokens bleiben unverändert.
+
+## Alarmnachweis 0.10.3
+Unbestätigte Codes erscheinen als ruhiger, expliziter Hinweis im Anlagenbild mit vorhandener HA-Warnfarbe; keine rote bestätigte Störungsdarstellung allein wegen einer Nummer. Der Betriebsstatus nennt die Unklarheit. Verifizierte aktive Alarme behalten die bestehende priorisierte Darstellung.

@@ -89,3 +89,7 @@ Mehrere Registertreffer werden nur dann als Sensor-/Number-Aliase behandelt, wen
 - `Zeitreihe` hält den bekannten Zustand bis zur nächsten Änderung; vor dem ersten belegten Wert und bei unknown bleibt die Zelle leer. `Zustandswechsel` enthält Recorderereignisse; `Zuordnung` beschreibt Zeitraum, Zeitzone, Entity und Einheit. Keine Interpolation oder Chart-Downsampling. Sicherheitsgrenzen verhindern unbemerkte Kürzung.
 - Zelltexte sind inlineStr statt Formel; Maße sind numerisch; Ortszeit ist echte Excel-Datumszahl plus eindeutige UTC-Spalte. Ausgabe und Blob bleiben lokal. „Download gestartet“ bestätigt keinen bereits gespeicherten Android-Dateieintrag.
 - Nachweise und reale Testgrenzen stehen in `docs/REVIEW-0.10.1.md`.
+
+## Alarmnachweis 0.10.3
+`ncAlarm` ist der gemeinsame Besitzer für Alarm-Aktivität und Rohcode; `ncOperating` verwendet ausschließlich bestätigte Aktivität für mode=alarm. Ein nichtnull positiver Nummernwert allein ist kein Aktivnachweis. Unbestätigte Codes bleiben als Diagnosehinweis und im Betrieb als ungeklärter Alarmstatus sichtbar. Code 0 wird als „Kein Alarmcode“ bezeichnet, nicht als Bestätigung eines fehlerfreien Systems.
+`alarmActive` besitzt keine automatische Entity/Registerzuordnung. Die manuelle Auswahl akzeptiert ausschließlich binary_sensor; Nutzer müssen einen verifizierten Gesamt-Aktivstatus verwenden. 32196 Class 1 alarm wird nicht als globale Entwarnung interpretiert. Alarmstatus unbekannt bleibt unbekannt, bestätigte Alarme bleiben vorrangig; Offline hat Vorrang. Keine neuen Schreibservices.

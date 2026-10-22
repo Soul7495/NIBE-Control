@@ -1,6 +1,6 @@
 {
   "name": "nibe-control",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "Dynamic Home Assistant dashboard for NIBE S-series heat pumps",
   "type": "module",
   "scripts": {

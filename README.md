@@ -1,4 +1,4 @@
-# NIBE Control 0.10.2
+# NIBE Control 0.10.3
 
 ## Neu in 0.5.0
 Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
@@ -133,3 +133,10 @@ Die Erstellung läuft lokal und benötigt vorhandene Recorderhistorie. Wenn die 
 ## Review vor Release 0.10.1
 
 [Gesamtes UI- und Funktionsreview](docs/REVIEW-0.10.1.md): alle vorhandenen Funktionsbereiche, 95 Tests, Build/Syntax, statischer UI-Audit und unabhängige XLSX-Leseprüfung. Offen bleiben die darin ausdrücklich genannten HA-/Hardware-/Zielgeräte-Livechecks.
+
+## Alarmanzeige 0.10.3
+Register 31976 liefert eine Alarmnummer. Ein Wert ungleich 0 wird nicht mehr ohne Aktivnachweis als aktuelle Störung behandelt. Der Livecheck zeigt den konkreten Konflikt: HA-Code 366, MyUplink „Ihr System arbeitet einwandfrei“. Ob die Nummer historisch, noch gespeichert oder veraltet übertragen ist, ist damit nicht bewiesen.
+
+Ohne eindeutigen Aktivstatus bleibt der Code als **Aktivität unbestätigt** sichtbar; die Betriebsanzeige meldet **Alarmstatus ungeklärt**. Das bedeutet keine Entwarnung. Ein vorhandener verlässlicher binärer Alarm-Aktivstatus für die gesamte Anlage kann unter Einstellungen → Verdichter und Energie → **Alarm aktiv (Status)** manuell zugeordnet werden. Ein aktives Signal bestätigt die Störungsanzeige auch ohne Nummer. Ein inaktives Signal wird mit dem weiterhin sichtbaren Code kombiniert. Nur binary_sensor-Entities sind zulässig; kein Reset, keine Registerschreibzugriffe.
+
+Register 32196 ist laut Quelle nur „Class 1 alarm“ und im Export deaktiviert; es wird weder automatisch aktiviert noch als Gesamt-Aktivstatus verwendet. Quelle: yozik04/nibe `vvms320_vvms325.json`, geprüft am 22.10.2026. Ohne verifizierte Aktivquelle NIBE-Gerät/MyUplink prüfen; Alarmmeldungen werden nicht still entfernt.

@@ -16,11 +16,24 @@ export function ncPriority(value) {
   return ({'10':'idle','20':'water','30':'heat','40':'pool','60':'cooling',
     'off':'idle','hot water':'water','heat':'heat','pool':'pool','cooling':'cooling'})[String(value ?? '').toLowerCase()] || 'unknown';
 }
-export function ncOperating(values, connected=true) {
-  const hz=ncNumber(values.compressorHz), alarm=ncNumber(values.alarm);
+// A nonzero alarm number alone does not prove that the alarm is currently active.
+export function ncAlarm(values){
+ const code=ncNumber(values.alarm),active=ncBinary(values.alarmActive),reported=code!=null&&code>0;
+ if(active===true)return {active:true,uncertain:false,label:reported?`Aktiver Alarm ${code}`:'Alarm aktiv',detail:'Durch den zugeordneten Alarm-Aktivstatus bestätigt.'};
+ if(active===false)return {active:false,uncertain:false,label:reported?`Alarmcode ${code} · nicht aktiv`:'Kein aktiver Alarm',detail:'Der zugeordnete Alarm-Aktivstatus meldet keinen aktiven Alarm. Der Nummernwert bleibt zur Diagnose sichtbar.'};
+ return {active:null,uncertain:reported,label:reported?`Alarmcode ${code} · Aktivität unbestätigt`:'Alarmaktivität nicht verfügbar',detail:'Register 31976 liefert eine Alarmnummer. Ohne eindeutigen Aktivstatus wird daraus keine aktive Störung abgeleitet. Anzeige am NIBE-Gerät / MyUplink prüfen.'};
+}
+export function ncOperating(values,connected=true){
+ const result=ncOperatingBase(values,connected),alarm=ncAlarm(values);
+ if(connected&&alarm.uncertain&&!['alarm','defrost'].includes(result.mode))return {...result,label:result.mode==='idle'?'Verdichter steht · Alarmstatus ungeklärt':result.label+' · Alarmstatus ungeklärt'};
+ return result;
+}
+function ncOperatingBase(values, connected=true) {
+
+  const hz=ncNumber(values.compressorHz), alarm=ncAlarm(values);
   const kind=ncPriority(values.priority);
   if (!connected) return {mode:'offline',label:'Home Assistant getrennt',kind:'unknown',active:false};
-  if (alarm!=null && alarm!==0) return {mode:'alarm',label:`Störung · Alarm ${alarm}`,kind:'unknown',active:false};
+  if (alarm.active===true) return {mode:'alarm',label:alarm.label,kind:'unknown',active:false};
   const defrost=ncBinary(values.defrost);
   if (defrost===true) return {mode:'defrost',label:'Abtauung',kind:'unknown',active:false};
   // Undocumented numeric defrost states must not be treated as "off".

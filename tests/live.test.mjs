@@ -12,8 +12,8 @@ function fixture(){
  const selectors={'main':main,'.machine':machine,'.energy-node.sg':sg};
  const lists={'[data-operation]':[label],'[data-destination]':[water,heat],'[data-branch]':[branch],'[data-state]':[evcc]};
  card.shadowRoot={querySelector:s=>selectors[s]||null,querySelectorAll:s=>lists[s]||[]};
- card.mapping=Object.fromEntries(['priority','compressorHz','alarm','defrost','sgA','sgB','evccEnabled'].map(x=>[x,x]));
- card._hass={connected:true,states:Object.fromEntries(Object.entries({priority:30,compressorHz:40,alarm:0,defrost:0,sgA:0,sgB:1,evccEnabled:'on'}).map(([k,v])=>[k,{state:String(v),attributes:{}}]))};
+ card.mapping=Object.fromEntries(['priority','compressorHz','alarm','alarmActive','defrost','sgA','sgB','evccEnabled'].map(x=>[x,x]));
+ card._hass={connected:true,states:Object.fromEntries(Object.entries({priority:30,compressorHz:40,alarm:0,alarmActive:'off',defrost:0,sgA:0,sgB:1,evccEnabled:'on'}).map(([k,v])=>[k,{state:String(v),attributes:{}}]))};
  return {card,main,machine,water,heat,label,branch,evcc};
 }
 test('component refresh changes heat→water without rebuilding DOM',()=>{
@@ -22,7 +22,7 @@ test('component refresh changes heat→water without rebuilding DOM',()=>{
  assert.equal(f.card.shadowRoot,root);assert.equal(f.label.textContent,'Warmwasserbereitung');assert.equal(f.water.classList.values.has('is-active'),true);assert.equal(f.heat.classList.values.has('is-active'),false);
 });
 test('component refresh stops animation and branches on alarm',()=>{
- const f=fixture();f.card.paintValues();f.card._hass.states.alarm.state='308';f.card.paintValues();
+ const f=fixture();f.card.paintValues();f.card._hass.states.alarm.state='308';f.card._hass.states.alarmActive.state='on';f.card.paintValues();
  assert.equal(f.main.className,'app alarm');assert.equal(f.machine.classList.values.has('active'),false);assert.equal(f.water.classList.values.has('is-active'),false);
 });
 test('component refresh distinguishes EVCC missing from disabled',()=>{
@@ -113,4 +113,10 @@ test('a failed history refresh retains the last successful curves',async()=>{
 
 test('video regression: diagnostic frequency labels do not repeat their tag',()=>{
  const {card}=fixture();card.mapping={};card._hass.states={};assert.ok(!card.diagnostics().includes('Verdichter Soll · Soll'));
+});
+test('video alarm 366 remains a diagnostic hint and live operating states still update',()=>{
+ const f=fixture(),hint={hidden:true,textContent:''};const original=f.card.shadowRoot.querySelector;f.card.shadowRoot.querySelector=q=>q==='[data-alarm-evidence]'?hint:original(q);
+ delete f.card._hass.states.alarmActive;f.card._hass.states.alarm.state='366';f.card.paintValues();assert.equal(f.main.className,'app running');assert.ok(f.label.textContent.includes('Heizbetrieb'));assert.equal(hint.hidden,false);assert.match(hint.textContent,/366/);assert.match(hint.textContent,/unbestätigt/);
+ f.card._hass.states.alarmActive={state:'on',attributes:{}};f.card.paintValues();assert.equal(f.main.className,'app alarm');assert.equal(hint.hidden,true);
+ f.card._hass.states.alarmActive.state='off';f.card.paintValues();assert.equal(f.main.className,'app running');assert.equal(hint.hidden,true);
 });

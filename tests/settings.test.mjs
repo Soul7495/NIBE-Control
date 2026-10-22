@@ -101,3 +101,8 @@ test('lazy manual mode actually enables the entity select and keeps the selected
  card.shadowRoot.getElementById=id=>id==='community-setup'?form:id==='device-profile'?profile:id==='map-room'?select:null;
  card.shadowRoot.querySelectorAll=q=>q==='[data-mapping-mode]'?[mode]:q==='.mapping-group'?[group]:q==='.mapping-group[open] [data-mapping]'?[select]:[];card.previewSetup=()=>{};card.bindSetup();mode.onchange();assert.equal(select.disabled,false);assert.ok(select.innerHTML.includes('sensor.living'));assert.equal(select.value,'sensor.living');mode.value='none';mode.onchange();assert.equal(select.disabled,true);group.ontoggle();assert.equal(select.value,'sensor.living');
 });
+test('alarm activity requires an explicit binary sensor; alarm number and class-1 registers are not inferred',()=>{
+ const {card}=cardFixture();card.registry=[{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'a-31976',entity_id:'sensor.alarm'},{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'a-32196',entity_id:'sensor.class_1'}];card.config={profile:'vvms320',config_entry_id:'a'};card.applyDiscovery();assert.equal(card.mapping.alarm,'sensor.alarm');assert.equal(card.mapping.alarmActive,null);
+ assert.equal(entityCompatible('alarmActive','sensor.class_1',state(0),PROFILE.roles.alarmActive),false);assert.equal(entityCompatible('alarmActive','binary_sensor.system_alarm',state('on'),PROFILE.roles.alarmActive),true);
+ card._hass.states['sensor.alarm']=state(366);assert.match(card.diagnosticValue('alarm'),/Aktivität unbestätigt/);assert.match(card.diagnosticDetail('alarmActive'),/Klasse-1/);
+});
