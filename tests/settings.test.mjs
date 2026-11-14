@@ -42,7 +42,7 @@ test('dashboard merge preserves maintenance, metadata and unrelated strategy set
  assert.throws(()=>mergeDashboardSettings({views:[]},{}));assert.throws(()=>mergeDashboardSettings({strategy:{type:'map'}},{}));
 });
 function cardFixture(){
- const classes=new Map();vm.runInNewContext(readFileSync(new URL('../dist/nibe-control.js',import.meta.url),'utf8'),{document:{},HTMLElement:class{},window:{},customElements:{get:k=>classes.get(k),define:(k,v)=>classes.set(k,v)},Intl});
+ const classes=new Map();vm.runInNewContext(readFileSync(new URL('../dist/nibe-control.js',import.meta.url),'utf8'),{setTimeout,clearTimeout,document:{},HTMLElement:class{},window:{},customElements:{get:k=>classes.get(k),define:(k,v)=>classes.set(k,v)},Intl});
  const card=new (classes.get('nibe-control-card'))(),feedback={textContent:''},button={disabled:false},field={disabled:false};
  card.config={profile:'auto',mappings:{},visibility:{},setup_complete:false,dashboard_url_path:'nibe-test',ventilation:{filter_date_entity:'input_datetime.keep'}};card.registry=[];card.devices=[];
  card.shadowRoot={querySelector:s=>s==='[data-setup-feedback]'?feedback:null,querySelectorAll:s=>s==='#community-setup fieldset'?[field]:[],getElementById:s=>s==='setup-save'?button:null};
@@ -101,8 +101,10 @@ test('lazy manual mode actually enables the entity select and keeps the selected
  card.shadowRoot.getElementById=id=>id==='community-setup'?form:id==='device-profile'?profile:id==='map-room'?select:null;
  card.shadowRoot.querySelectorAll=q=>q==='[data-mapping-mode]'?[mode]:q==='.mapping-group'?[group]:q==='.mapping-group[open] [data-mapping]'?[select]:[];card.previewSetup=()=>{};card.bindSetup();mode.onchange();assert.equal(select.disabled,false);assert.ok(select.innerHTML.includes('sensor.living'));assert.equal(select.value,'sensor.living');mode.value='none';mode.onchange();assert.equal(select.disabled,true);group.ontoggle();assert.equal(select.value,'sensor.living');
 });
-test('alarm activity requires an explicit binary sensor; alarm number and class-1 registers are not inferred',()=>{
- const {card}=cardFixture();card.registry=[{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'a-31976',entity_id:'sensor.alarm'},{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'a-32196',entity_id:'sensor.class_1'}];card.config={profile:'vvms320',config_entry_id:'a'};card.applyDiscovery();assert.equal(card.mapping.alarm,'sensor.alarm');assert.equal(card.mapping.alarmActive,null);
- assert.equal(entityCompatible('alarmActive','sensor.class_1',state(0),PROFILE.roles.alarmActive),false);assert.equal(entityCompatible('alarmActive','binary_sensor.system_alarm',state('on'),PROFILE.roles.alarmActive),true);
- card._hass.states['sensor.alarm']=state(366);assert.match(card.diagnosticValue('alarm'),/Aktivität unbestätigt/);assert.match(card.diagnosticDetail('alarmActive'),/Klasse-1/);
+test('VVM alarm activity resolves documented register 32196 and accepts its numeric HA sensor',()=>{
+ const {card}=cardFixture();card.registry=[{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'a-31976',entity_id:'sensor.alarm'},{platform:'nibe_heatpump',config_entry_id:'a',unique_id:'a-32196',entity_id:'sensor.class_1'}];card.config={profile:'vvms320',config_entry_id:'a'};card.applyDiscovery();assert.equal(card.mapping.alarm,'sensor.alarm');assert.equal(card.mapping.alarmActive,'sensor.class_1');
+ assert.equal(entityCompatible('alarmActive','sensor.class_1',state(0),PROFILE.roles.alarmActive),true);assert.equal(entityCompatible('alarmActive','binary_sensor.system_alarm',state('on'),PROFILE.roles.alarmActive),true);
+ assert.equal(entityCompatible('alarmActive','sensor.alarm',state(216),PROFILE.roles.alarmActive),false);assert.equal(entityCompatible('alarmActive','number.setting',state(1),PROFILE.roles.alarmActive),false);assert.equal(entityCompatible('alarmActive','sensor.temperature',state(1,'°C'),PROFILE.roles.alarmActive),false);
+ card._hass.states['sensor.alarm']=state(216);card._hass.states['sensor.class_1']=state(0);assert.match(card.diagnosticValue('alarm'),/nicht aktiv/);assert.match(card.diagnosticDetail('alarmActive'),/32196/);
+ card._hass.states['sensor.class_1']=state(1);assert.match(card.diagnosticValue('alarm'),/Aktiver Alarm 216/);
 });

@@ -92,4 +92,16 @@ Mehrere Registertreffer werden nur dann als Sensor-/Number-Aliase behandelt, wen
 
 ## Alarmnachweis 0.10.3
 `ncAlarm` ist der gemeinsame Besitzer für Alarm-Aktivität und Rohcode; `ncOperating` verwendet ausschließlich bestätigte Aktivität für mode=alarm. Ein nichtnull positiver Nummernwert allein ist kein Aktivnachweis. Unbestätigte Codes bleiben als Diagnosehinweis und im Betrieb als ungeklärter Alarmstatus sichtbar. Code 0 wird als „Kein Alarmcode“ bezeichnet, nicht als Bestätigung eines fehlerfreien Systems.
-`alarmActive` besitzt keine automatische Entity/Registerzuordnung. Die manuelle Auswahl akzeptiert ausschließlich binary_sensor; Nutzer müssen einen verifizierten Gesamt-Aktivstatus verwenden. 32196 Class 1 alarm wird nicht als globale Entwarnung interpretiert. Alarmstatus unbekannt bleibt unbekannt, bestätigte Alarme bleiben vorrangig; Offline hat Vorrang. Keine neuen Schreibservices.
+## Synchronisation und Alarmnachweis 0.11.0 — ersetzt Einschränkung aus 0.10.3
+| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
+|---|---|---|---|---|
+| Aktualisierung | refreshData / ncSnapshotState / ncDeadline | hass und HA get_states | automatisch / manuell / Wiederverbindung | tests/sync.test.mjs, scripts/verify-ui.mjs |
+| Alarmaktivität | ncAlarm / Profilrolle alarmActive | NIBE M12676EN TIF EN 2608, FC04/2195 | VVM 32196 / manuelle Quelle / unbekannt | tests/settings.test.mjs, tests/sync.test.mjs |
+
+`alarmActive` wird für VVM S320/S325 anhand Register 32196 innerhalb der ausgewählten Installation aufgelöst. Offizieller Nachweis: M12676EN, gemeinsame Register, Seite 16: Active alarm 2195, 0/1. Die Bibliothek 2.25.0 nennt dieselbe Adresse Class 1 alarm und stellt einen numerischen Sensor bereit. Sensoren ohne Einheit mit 0/1 und verifizierte binary_sensor sind zulässig. Deaktivierte Datenpunkte erhalten eine konkrete Anleitung; keine automatische Aktivierung. Andere Profile werden nicht stillschweigend erweitert. Manuelle Overrides und null haben Vorrang.
+
+`refreshData` besitzt Duplikatschutz, 30-Sekunden-Anfragedeadlines, Generations-/Mappingprüfung und 15 Sekunden Mindestabstand für manuelle Geräteabfragen. Automatisch jede Minute nur HA-Snapshot; sichtbar nach App-Rückkehr und Wiederverbindung ebenfalls. Manuell werden Registry und Geräte neu gelesen und genau ein `homeassistant.update_entity` für eine zugeordnete NIBE-Sensor-Entity der gewählten Installation angefordert; der gemeinsame Coordinator besitzt die physische Abfrage. Keine Integration wird neu geladen, kein Register geschrieben.
+
+Snapshots leben getrennt von dem von HA gelieferten hass-Objekt. Nur zugeordnete IDs werden gespeichert; letzte HA-Änderungszeit und Baseline-Identität verhindern das Überschreiben neuerer Pushzustände. Fehlende Snapshot-Entities behalten keinen unbelegt alten Wert. Entfernen und Verbindungsabbruch invalidieren Antworten; Timer und Visibility-Listener werden entfernt. Formulare, Cursor und Navigation bleiben erhalten.
+
+Rückmeldung beschreibt HA-Abgleich und Anforderung, keine garantierte physische Synchronität. Bei Fehler bleibt der letzte bekannte Stand mit Inline-Hinweis. Ein alter last_changed-/last_updated-Zeitstempel beweist keine ausgefallene Abfrage; Diagnose unterscheidet Meldung/Änderung in HA. 0 Hz bei aktiver Zusatzheizung darf weiterhin Wärmebetrieb bestätigen und wird in Datenbasis erklärt. Quellwerte können zeitversetzt eintreffen; kein erfundener atomarer Gerätesnapshot und keine Verzögerung echter Alarme.

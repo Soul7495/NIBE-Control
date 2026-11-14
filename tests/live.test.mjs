@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 function fixture(){
  const classes=new Map();
  const source=readFileSync(new URL('../dist/nibe-control.js',import.meta.url),'utf8');
- vm.runInNewContext(source,{document:{createElement:()=>({style:{setProperty(){}},dataset:{},attributes:{},setAttribute(k,v){this.attributes[k]=v;},getAttribute(k){return this.attributes[k];}})},HTMLElement:class{},window:{},customElements:{get:k=>classes.get(k),define:(k,v)=>classes.set(k,v)},Intl});
+ vm.runInNewContext(source,{setTimeout,clearTimeout,document:{createElement:()=>({style:{setProperty(){}},dataset:{},attributes:{},setAttribute(k,v){this.attributes[k]=v;},getAttribute(k){return this.attributes[k];}})},HTMLElement:class{},window:{},customElements:{get:k=>classes.get(k),define:(k,v)=>classes.set(k,v)},Intl});
  const card=new (classes.get('nibe-control-card'))();
  const make=dataset=>({dataset,textContent:'',classList:{values:new Set(),toggle(k,on){on?this.values.add(k):this.values.delete(k);}},closest(){return this;}});
  const main=make({}), machine=make({}), water=make({destination:'water'}), heat=make({destination:'heat'}), label=make({}), branch=make({branch:'water'}),sg=make({}),evcc=make({state:'evccEnabled'});
@@ -120,3 +120,4 @@ test('video alarm 366 remains a diagnostic hint and live operating states still 
  f.card._hass.states.alarmActive={state:'on',attributes:{}};f.card.paintValues();assert.equal(f.main.className,'app alarm');assert.equal(hint.hidden,true);
  f.card._hass.states.alarmActive.state='off';f.card.paintValues();assert.equal(f.main.className,'app running');assert.equal(hint.hidden,true);
 });
+

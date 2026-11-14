@@ -1,12 +1,14 @@
 {
   "name": "nibe-control",
-  "version": "0.10.3",
+  "version": "0.11.0",
   "description": "Dynamic Home Assistant dashboard for NIBE S-series heat pumps",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
-    "check": "node --check src/nibe-control.js && node --check dist/nibe-control.js"
+    "check": "node --check src/nibe-control.js && node --check dist/nibe-control.js",
+    "test:ui": "node scripts/verify-ui.mjs"
   },
   "license": "MIT"
 }
+

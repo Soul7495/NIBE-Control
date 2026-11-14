@@ -1,4 +1,4 @@
-# NIBE Control 0.10.3
+# NIBE Control 0.11.0
 
 ## Neu in 0.5.0
 Erkennbare Außen-/Inneneinheit mit exakt angeschlossenen Leitungen. Heizkreis und Warmwasser bleiben auf jedem Display sichtbar. Betriebsart und Animation wechseln live, ohne die Oberfläche neu aufzubauen.
@@ -134,9 +134,34 @@ Die Erstellung läuft lokal und benötigt vorhandene Recorderhistorie. Wenn die 
 
 [Gesamtes UI- und Funktionsreview](docs/REVIEW-0.10.1.md): alle vorhandenen Funktionsbereiche, 95 Tests, Build/Syntax, statischer UI-Audit und unabhängige XLSX-Leseprüfung. Offen bleiben die darin ausdrücklich genannten HA-/Hardware-/Zielgeräte-Livechecks.
 
-## Alarmanzeige 0.10.3
-Register 31976 liefert eine Alarmnummer. Ein Wert ungleich 0 wird nicht mehr ohne Aktivnachweis als aktuelle Störung behandelt. Der Livecheck zeigt den konkreten Konflikt: HA-Code 366, MyUplink „Ihr System arbeitet einwandfrei“. Ob die Nummer historisch, noch gespeichert oder veraltet übertragen ist, ist damit nicht bewiesen.
+## Synchronisation und Alarmanzeige 0.11.0
 
-Ohne eindeutigen Aktivstatus bleibt der Code als **Aktivität unbestätigt** sichtbar; die Betriebsanzeige meldet **Alarmstatus ungeklärt**. Das bedeutet keine Entwarnung. Ein vorhandener verlässlicher binärer Alarm-Aktivstatus für die gesamte Anlage kann unter Einstellungen → Verdichter und Energie → **Alarm aktiv (Status)** manuell zugeordnet werden. Ein aktives Signal bestätigt die Störungsanzeige auch ohne Nummer. Ein inaktives Signal wird mit dem weiterhin sichtbaren Code kombiniert. Nur binary_sensor-Entities sind zulässig; kein Reset, keine Registerschreibzugriffe.
+Liveupdates aus `hass` bleiben der normale Datenweg. Ein sichtbares Dashboard gleicht zusätzlich jede Minute den HA-Zustand ab; bei Rückkehr aus dem Hintergrund und Wiederverbindung sofort. Nur zugeordnete Rollen werden aus dem Snapshot übernommen. Neuere Livezustände haben Vorrang vor verzögerten Antworten. Der Abgleich verändert keine Dashboard-Einstellungen und baut die Oberfläche nicht neu auf.
 
-Register 32196 ist laut Quelle nur „Class 1 alarm“ und im Export deaktiviert; es wird weder automatisch aktiviert noch als Gesamt-Aktivstatus verwendet. Quelle: yozik04/nibe `vvms320_vvms325.json`, geprüft am 22.10.2026. Ohne verifizierte Aktivquelle NIBE-Gerät/MyUplink prüfen; Alarmmeldungen werden nicht still entfernt.
+Der dezente Aktualisieren-Button neben dem Zahnrad liest Registry und HA-Werte neu ein. Für genau eine aktive Sensor-Entity der ausgewählten NIBE-Installation fordert er über `homeassistant.update_entity` eine Aktualisierung des gemeinsamen Coordinators an. Kein Register wird geschrieben. 15 Sekunden Mindestabstand und Duplikatschutz begrenzen manuelle Abfragen; der automatische HA-Abgleich fordert keine zusätzlichen Geräte-Polls an. Die Integration selbst pollt in HA Core 2026.11.1 im 60-Sekunden-Intervall. Eine übermittelte Abfrage ist kein Nachweis aktueller physischer Messwerte.
+
+„HA-Stand“ bezeichnet den Zeitpunkt des Dashboard-Abgleichs, nicht den Messzeitpunkt. Diagnosehilfen zeigen vorhandene `last_reported`-/`last_updated`-Zeitstempel ausdrücklich als HA-Meldung bzw. HA-Änderung. Unveränderte Messwerte können alte Änderungszeitstempel besitzen; daraus wird keine pauschale Offline-Bewertung abgeleitet. Bei Abfragefehler bleibt der letzte bekannte Stand mit Hinweis erhalten. Sichtbare Diagramme werden nach dem Abgleich nachgeladen; verlorene Anfragen laufen nach 30 Sekunden aus.
+
+### Alarm-Aktivstatus aktivieren
+
+Die offizielle NIBE-Dokumentation M12676EN (TIF EN 2608, gemeinsame Register, Seite 16) nennt **Active alarm**, FC04-Adresse 2195, 0 = kein aktiver Alarm, 1 = aktiver Alarm. In der Registerzählung der HA-Bibliothek ist dies **32196**, dort „Class 1 alarm“ genannt. Dies korrigiert die pauschale Ablehnung dieses Registers in 0.10.3.
+
+Bei VVM S320/S325 wird dieses Register innerhalb der gewählten NIBE-config_entry automatisch erkannt. Andere/generische Profile erhalten keine ungeprüfte automatische Zuordnung. Eine explizite manuelle Auswahl oder „Nicht verwenden“ bleibt erhalten. Der numerische `sensor` aus der NIBE-Integration ist ebenso zuordenbar wie ein verifizierter `binary_sensor`; es werden ausschließlich 0/1 bzw. bekannte binäre Zustände ausgewertet.
+
+Ist die Entity deaktiviert:
+
+1. Home Assistant → Einstellungen → Geräte & Dienste → NIBE Heat Pump → Gerät → Entitäten.
+2. Deaktivierte Entitäten anzeigen und **Class 1 alarm / 32196** suchen.
+3. Nur diese benötigte Entity aktivieren. Das Dashboard aktiviert nichts automatisch.
+4. In NIBE Control **Daten aktualisieren** drücken. Unter Einstellungen → Verdichter und Energie den Alarm-Aktivstatus prüfen.
+5. Im normalen Betrieb sollte dieser Status 0 anzeigen. Einen Widerspruch zur Geräteanzeige anhand der Quellen und Zeitstempel prüfen; keinen Alarm zum Test erzeugen.
+
+Register 31976 bleibt die separate Alarmnummer. Nummer 216/366 mit Aktivstatus 0 wird als nicht aktiver Code diagnostiziert; Aktivstatus 1 priorisiert den Alarm auch ohne Nummer. Ein fehlender oder ungültiger Aktivstatus bleibt unbestätigt. Der Fix erklärt nicht abschließend, warum die Nummer im Video von MyUplink abweicht. Kein Alarmreset, keine Quittierung und keine zusätzlichen NIBE-Schreibregister.
+
+Quellen:
+- https://professional.nibe.eu/document/Technical%20information%20(TIF)/M12676EN.pdf
+- https://github.com/yozik04/nibe/blob/2.25.0/nibe/data/vvms320_vvms325.json
+- https://github.com/home-assistant/core/blob/2026.11.1/homeassistant/components/nibe_heatpump/coordinator.py
+- https://github.com/home-assistant/core/blob/2026.11.1/homeassistant/helpers/update_coordinator.py
+
+Verifikation und reale Testgrenzen: `docs/REVIEW-0.11.0.md`.

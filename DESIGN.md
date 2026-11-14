@@ -68,3 +68,7 @@ Gemeinsames Zweispaltenraster: Zeitraum füllt die linke Spalte, die sekundäre 
 
 ## Alarmnachweis 0.10.3
 Unbestätigte Codes erscheinen als ruhiger, expliziter Hinweis im Anlagenbild mit vorhandener HA-Warnfarbe; keine rote bestätigte Störungsdarstellung allein wegen einer Nummer. Der Betriebsstatus nennt die Unklarheit. Verifizierte aktive Alarme behalten die bestehende priorisierte Darstellung.
+
+
+## Aktualisierung 0.11.0
+Ein zweiter 44-px-Symbolbutton direkt links neben dem Zahnrad gehört zur bestehenden Header-Aktionsgruppe. Gleiche Kontur, bestehende Themefarben, deutscher zugänglicher Name und Fokusrahmen. Keine neue Hauptkachel und keine zusätzliche Animation. Eine ruhige zweizeilige Statusfläche unter dem Header hält HA-Abgleich/Pending/Fehler sichtbar, ohne Werte oder Formulare neu aufzubauen. Quellenzeitstempel bleiben in aufgeklappten Diagnosehilfen. Bestehende Smartphone-/Wall-Display-Geometrie bleibt erhalten.

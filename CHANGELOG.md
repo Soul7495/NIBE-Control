@@ -32,6 +32,13 @@
 
 # Changelog
 
+## 0.11.0
+- Laufender HA-Snapshot-Abgleich jede Minute bei sichtbarem Dashboard sowie sofort nach App-Rückkehr und Wiederverbindung; neuere Pushwerte bleiben geschützt.
+- Dezent integrierter Aktualisieren-Button: Registry/Device Registry neu lesen und eine gemeinsame NIBE-Coordinator-Abfrage anfordern. Duplikatschutz, Mindestabstand und Anfragedeadlines.
+- VVM-Alarmaktivstatus 32196 anhand aktueller offizieller NIBE-Dokumentation zuordnen; numerischen 0/1-Sensor unterstützen. Korrigiert die unvollständige Einschränkung aus 0.10.3.
+- Diagnose mit HA-Quellenzeitstempeln und Aktivierungsanleitung; Alarmnummer weiterhin getrennt, kein automatisches Aktivieren/Zurücksetzen.
+- Keine neue NIBE-Steuerfunktion; bestehende Bedienung, Filterwartung, Zuordnung, Historie und Export erhalten.
+
 ## 0.10.3
 - Falsche Gleichsetzung von Alarmnummer und aktivem Alarm behoben (Livecheck: Code 366 vs. MyUplink ohne Störung).
 - Nicht bestätigte Alarmnummer bleibt mit Hinweis und ungeklärtem Aktivstatus sichtbar, ohne den Betrieb als bestätigte Störung zu blockieren.
@@ -128,4 +135,5 @@
 - Wartungsdatum und Monatsintervall direkt im Lüftungsbereich einrichten; nach zweiter Bestätigung werden erforderliche HA-Helfer angelegt und dauerhaft genutzt.
 - Bestehende Datumsmappings bleiben unterstützt. Keine NIBE-Installateurwerte werden geschrieben.
 - 33 Tests, Build und Syntaxprüfung; reales HA-/Browserlayout noch nicht geprüft.
+
 

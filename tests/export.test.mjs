@@ -20,7 +20,7 @@ test('export rejects excessive datasets rather than silently downsampling',()=>{
  assert.throws(()=>ncExportTables([{points:Array.from({length:50001},()=>({time:0,value:1}))}],0,1000,'UTC'),/50.000/);
 });
 function fixture(){
- const classes=new Map();vm.runInNewContext(readFileSync(new URL('../dist/nibe-control.js',import.meta.url),'utf8'),{HTMLElement:class{},document:{},window:{},TextEncoder,Uint8Array,DataView,Intl,customElements:{get:k=>classes.get(k),define:(k,v)=>classes.set(k,v)}});
+ const classes=new Map();vm.runInNewContext(readFileSync(new URL('../dist/nibe-control.js',import.meta.url),'utf8'),{setTimeout,clearTimeout,HTMLElement:class{},document:{},window:{},TextEncoder,Uint8Array,DataView,Intl,customElements:{get:k=>classes.get(k),define:(k,v)=>classes.set(k,v)}});
  const card=new (classes.get('nibe-control-card'))(),feedback={textContent:''},button={disabled:false,innerHTML:'',textContent:''};card.config={};card.registry=[];card.meta={};card.devices=[];card.mapping={supplyTarget:'sensor.target',electrical:'sensor.watts',room:'climate.room'};card.historyHours=6;card.shadowRoot={querySelector:s=>s==='[data-export-feedback]'?feedback:null,getElementById:s=>s==='history-export'?button:null};card._hass={connected:true,states:{'sensor.target':{state:'31',attributes:{unit_of_measurement:'°C'}},'sensor.watts':{state:'1500',attributes:{unit_of_measurement:'W'}},'climate.room':{state:'auto',attributes:{current_temperature:23}}},config:{time_zone:'Europe/Berlin',unit_system:{temperature:'°C'}}};return {card,feedback,button};
 }
 test('actual component export fetches selected time window, climate attributes and numeric data without a service write',async()=>{
@@ -32,3 +32,4 @@ test('export handles offline, empty recorder, error and double activation honest
 test('export discards result after mapping or period changes',async()=>{
  const {card}=fixture();card.downloadHistoryFile=()=>assert.fail('wrong mapping');card._hass.callWS=async()=>{card.historyHours=12;return {};};assert.equal(await card.exportHistory(),false);
 });
+

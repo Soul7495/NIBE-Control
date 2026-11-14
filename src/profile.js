@@ -30,7 +30,9 @@ export const PROFILE = {
     sgB: { register: "31914", entity: "sensor.sg_ready_input_b_31914", label: "SG Eingang B", group: "diagnostic" },
     defrost: { register: "31806", entity: "sensor.defrosting_eb101_31806", label: "Abtauung", group: "recommended" },
     alarm: { register: "31976", entity: "sensor.alarm_number_31976", label: "Alarmnummer (Register)", group: "core" },
-    alarmActive: { label: "Alarm aktiv (Status)", group: "diagnostic" },
+    // NIBE M12676EN (TIF EN 2608), common registers: FC04/2195 = 32196.
+    // Upstream 2.25.0 calls this numeric 0/1 sensor "Class 1 alarm".
+    alarmActive: { register: "32196", entity: "sensor.class_1_alarm_32196", label: "Alarm aktiv (Status)", group: "diagnostic" },
     climate: { entity: "climate.vvms320_climate_system_s1", label: "Heizkreis", group: "control" },
     waterHeater: { entity: "water_heater.vvms320_hot_water", label: "Warmwasser", group: "control" },
     evccEnabled: { entity: "binary_sensor.evcc_nibe_enabled", label: "EVCC NIBE", group: "optional" },
@@ -212,3 +214,4 @@ export function detectProfile(devices=[],entryId=null){
 export function deviceProfile(id,devices=[],entryId=null){
  return DEVICE_PROFILES[id]||DEVICE_PROFILES[detectProfile(devices,entryId)];
 }
+

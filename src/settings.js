@@ -6,7 +6,8 @@ export const FEATURE_ROLES = {
 };
 export function entityCompatible(role,id,state,spec){
  const domain=String(id||'').split('.')[0];
- const required={alarmActive:'binary_sensor',waterHeater:'water_heater',climate:'climate',evccMode:'select',evccEnabled:'binary_sensor',evccCharging:'binary_sensor'}[role];
+ if(role==='alarmActive')return domain==='binary_sensor'||(domain==='sensor'&&!state?.attributes?.unit_of_measurement&&(!state||['0','1','unknown','unavailable'].includes(String(state.state).toLowerCase())));
+ const required={waterHeater:'water_heater',climate:'climate',evccMode:'select',evccEnabled:'binary_sensor',evccCharging:'binary_sensor'}[role];
  if(required)return domain===required;
  if(role==='room')return domain==='climate'||(domain==='sensor'&&['°C','°F'].includes(state?.attributes?.unit_of_measurement));
  if(!['sensor','number','binary_sensor','switch'].includes(domain))return false;
@@ -32,3 +33,4 @@ export function settingSnapshot(raw){
  const sort=obj=>Object.fromEntries(Object.entries(obj||{}).sort(([a],[b])=>a.localeCompare(b)));
  return JSON.stringify({profile:s.profile||'auto',config_entry_id:s.config_entry_id||null,mappings:sort(s.mappings),visibility:sort(s.visibility),setup_complete:!!s.setup_complete});
 }
+

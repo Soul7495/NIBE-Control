@@ -1,9 +1,10 @@
-/* NIBE Control 0.10.3 — local Home Assistant dashboard */
+/* NIBE Control 0.11.0 — local Home Assistant dashboard */
 import { ncNumber, ncBinary, ncOperating, ncSg, ncEvccMode, ncToday, ncFilterDate, ncHistoryPoints, ncHistoryPath, ncHistoryValue, ncHistoryScale, ncHistoryStats, ncPvAction, ncPriority, ncAlarm } from './state.js';
 import { PROFILE as DEVICE_PROFILE, resolveDiscovery, WRITE_ALLOWLIST, DEVICE_PROFILES, deviceProfile } from './profile.js';
 import { FEATURE_ROLES, entityCompatible, capabilityState, mergeDashboardSettings, settingSnapshot } from './settings.js';
 import { ncWorkbook, ncExportTables } from './history-export.js';
-const VERSION = "0.10.3";
+import { ncSnapshotState, ncDeadline } from './sync.js';
+const VERSION = "0.11.0";
 const PROFILE=Object.fromEntries(Object.entries(DEVICE_PROFILE.roles).map(([role,p])=>[role,{r:p.register,e:p.entity,a:p.attribute,l:p.label+(role==='compressorHz'?' Ist':role==='requestedHz'?' Soll':''),t:['compressorHz','requestedHz'].includes(role)?null:p.tag,u:p.unit,req:p.group==='recommended'||role==='sgA'||role==='sgB',diag:p.group==='diagnostic'||['electrical','compressorHz','compressorStatus','priority','sgMode','alarm','defrost'].includes(role),optional:p.group==='optional'}]));
 const INVALID = new Set(["unknown","unavailable","none","null",""]);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -23,13 +24,13 @@ function statusLabel(role, raw) {
 
 class NibeControlCard extends HTMLElement {
  setConfig(config){ this.config=config||{};this.settingsBaseline=settingSnapshot(this.config); if(!this.shadowRoot)this.attachShadow({mode:"open"}); }
- set hass(hass){ const first=!this._hass,reconnected=this._hass?.connected===false&&hass.connected!==false; this._hass=hass; if(first) this.init(); else{this.paintValues();if(reconnected)this.refreshRegistry().then(()=>this.loadHistory());} }
+ set hass(hass){ const first=!this._hass,reconnected=this.haConnected===false&&hass.connected!==false; if(hass.connected===false&&this.haConnected!==false){this.syncGeneration=(this.syncGeneration||0)+1;this.syncPending=false;}this.haConnected=hass.connected!==false;this._hass=hass; if(first) this.init(); else{this.paintValues();if(reconnected)this.refreshData({registry:true});} }
  async init(){
   try {
-   const [entities,devices]=await Promise.all([
+   const [entities,devices]=await ncDeadline(Promise.all([
     this._hass.callWS({type:"config/entity_registry/list"}),
     this._hass.callWS({type:"config/device_registry/list"})
-   ]);
+   ]));
    this.registry=entities; this.devices=devices;this.discoveryError=false;
    this.applyDiscovery();
   } catch(e){this.registry=[];this.discoveryError=true;this.applyDiscovery();}
@@ -37,17 +38,64 @@ class NibeControlCard extends HTMLElement {
   this.render(); this.loadHistory();
  }
  async refreshRegistry(){
-  if(this.registryPending)return;this.registryPending=true;
-  try{const rows=await this._hass.callWS({type:'config/entity_registry/list'});this.registry=rows;this.discoveryError=false;this.applyDiscovery();this.paintValues();if(this.shadowRoot.getElementById('community-setup'))this.previewSetup();}
+  if(this.registryPending)return this.registryPending;
+  this.registryPending=this.readRegistry();return this.registryPending;
+ }
+ async readRegistry(){
+  try{const [rows,devices]=await ncDeadline(Promise.all([this._hass.callWS({type:'config/entity_registry/list'}),this._hass.callWS({type:'config/device_registry/list'})]));if(this.detached)return false;if(!Array.isArray(rows)||!Array.isArray(devices))throw new Error('Ungültige Registry-Antwort');this.registry=rows;this.devices=devices;this.discoveryError=false;this.applyDiscovery();this.paintValues();if(this.shadowRoot.getElementById('community-setup'))this.previewSetup();return true;}
   catch(e){this.discoveryError=true;const message=this.shadowRoot?.querySelector('[data-discovery-error]');if(message)message.textContent='Registry nicht erreichbar. Vorhandene Zuordnung bleibt erhalten.';}
-  finally{this.registryPending=false;}
+  finally{this.registryPending=null;}
  }
  applyDiscovery(){
-  this.activeProfile=deviceProfile(this.config?.profile,this.devices||[],this.config?.config_entry_id);const result=resolveDiscovery(this.registry,this.config?.mappings||{},this.config?.config_entry_id,this.activeProfile);const changed=JSON.stringify(this.mapping||{})!==JSON.stringify(result.mapping);if(changed){this.historyGeneration=(this.historyGeneration||0)+1;this.historyPending=false;}this.discovery=result;this.mapping=result.mapping;this.meta=Object.fromEntries(Object.entries(this.mapping).map(([r,id])=>[r,this.registry.find(e=>e.entity_id===id)]));
+  this.activeProfile=deviceProfile(this.config?.profile,this.devices||[],this.config?.config_entry_id);const result=resolveDiscovery(this.registry,this.config?.mappings||{},this.config?.config_entry_id,this.activeProfile);const changed=JSON.stringify(this.mapping||{})!==JSON.stringify(result.mapping);if(changed){this.stateSnapshot={};this.historyGeneration=(this.historyGeneration||0)+1;this.historyPending=false;}this.discovery=result;this.mapping=result.mapping;this.meta=Object.fromEntries(Object.entries(this.mapping).map(([r,id])=>[r,this.registry.find(e=>e.entity_id===id)]));
  }
- connectedCallback(){clearInterval(this.historyTimer);this.historyTimer=setInterval(()=>{if(this._hass?.connected!==false&&this.selectedPlant==='heatpump'&&this.shadowRoot?.getElementById('charts')?.classList.contains('active')&&document.visibilityState!=='hidden')this.loadHistory();},60000);}
- disconnectedCallback(){this.historyPending=false;clearInterval(this.historyTimer);this.historyTimer=null;this.historyGeneration=(this.historyGeneration||0)+1;}
- st(role){return this._hass.states[this.mapping?.[role]];}
+ connectedCallback(){
+  this.detached=false;clearInterval(this.syncTimer);
+  this.onVisibility=this.onVisibility||(()=>{if(document.visibilityState!=='hidden')this.refreshData({registry:true});});
+  document.addEventListener('visibilitychange',this.onVisibility);
+  this.syncTimer=setInterval(()=>{if(document.visibilityState!=='hidden')this.refreshData();},60000);
+  if(this._hass&&this.mapping)this.refreshData({registry:true});
+ }
+ disconnectedCallback(){this.detached=true;this.syncGeneration=(this.syncGeneration||0)+1;this.syncPending=false;document.removeEventListener('visibilitychange',this.onVisibility);this.historyPending=false;clearInterval(this.syncTimer);this.syncTimer=null;this.historyGeneration=(this.historyGeneration||0)+1;}
+ st(role){const id=this.mapping?.[role];return ncSnapshotState(this._hass.states[id],this.stateSnapshot?.[id]);}
+ syncFeedback(text){this.syncMessage=text;this.paintSync();}
+ paintSync(){
+  const button=this.shadowRoot?.querySelector('[data-refresh]'),feedback=this.shadowRoot?.querySelector('[data-sync-feedback]');
+  if(button){button.disabled=!!this.syncPending||this._hass?.connected===false;button.setAttribute('aria-busy',String(!!this.syncPending));}
+  if(feedback)feedback.textContent=this._hass?.connected===false?'Home Assistant getrennt · letzter bekannter Stand':this.syncMessage||'Livewerte aus Home Assistant · automatischer Abgleich jede Minute';
+ }
+ async refreshData({requestDevice=false,registry=false}={}){
+  if(this.syncPending||this.detached||!this._hass||!this.mapping)return false;
+  if(this._hass.connected===false){this.syncFeedback('Home Assistant getrennt · letzter bekannter Stand');return false;}
+  if(requestDevice&&Date.now()-(this.lastDeviceRequest||0)<15000){this.syncFeedback('Bitte 15 Sekunden zwischen Geräteabfragen warten.');return false;}
+  const generation=(this.syncGeneration||0)+1;this.syncGeneration=generation;this.syncPending=true;
+  const current=()=>generation===this.syncGeneration&&!this.detached&&this._hass.connected!==false;
+  this.syncFeedback(requestDevice?'Geräteabfrage wird angefordert …':'HA-Daten werden abgeglichen …');
+  let deviceNote='';
+  try{
+   if(registry||requestDevice){await this.refreshRegistry();if(!current())return false;}
+   const ids=[...new Set(Object.values(this.mapping).filter(Boolean))],signature=JSON.stringify(this.mapping);
+   if(requestDevice){
+    // One entity refreshes the shared coordinator. Never dispatch once per register.
+    const target=(this.registry||[]).find(row=>ids.includes(row.entity_id)&&row.platform==='nibe_heatpump'&&/^(sensor|binary_sensor)\./.test(row.entity_id)&&!row.disabled_by&&this._hass.states[row.entity_id]&&(!this.discovery?.selected||row.config_entry_id===this.discovery.selected));
+    if(target){this.lastDeviceRequest=Date.now();try{await ncDeadline(this._hass.callService('homeassistant','update_entity',{entity_id:target.entity_id}));deviceNote='Geräteabfrage angefordert · ';}catch(e){deviceNote='Geräteabfrage nicht bestätigt · ';}}
+    else deviceNote='Keine passende NIBE-Entity für eine Geräteabfrage · ';
+    if(!current()||signature!==JSON.stringify(this.mapping))return false;
+   }
+   const baseline=Object.fromEntries(ids.map(id=>[id,this._hass.states[id]]));
+   const states=await ncDeadline(this._hass.callWS({type:'get_states'}));
+   if(!current()||signature!==JSON.stringify(this.mapping))return false;
+   if(!Array.isArray(states))throw new Error('Ungültige HA-Antwort');
+   const wanted=new Set(ids),snapshot=Object.fromEntries(ids.map(id=>[id,{state:null,baseline:baseline[id]}]));
+   for(const state of states)if(wanted.has(state.entity_id))snapshot[state.entity_id]={state,baseline:baseline[state.entity_id]};
+   this.stateSnapshot=snapshot;this.lastSync=Date.now();this.paintValues();
+   const time=new Intl.DateTimeFormat('de-DE',{timeZone:this._hass.config?.time_zone||'Europe/Berlin',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(this.lastSync);
+   this.syncFeedback(deviceNote+'HA-Stand '+time+(this.discoveryError?' · Zuordnung konnte nicht neu geprüft werden':''));
+   if(this.selectedPlant==='heatpump'&&this.shadowRoot?.getElementById('charts')?.classList.contains('active'))await this.loadHistory();
+   return true;
+  }catch(e){if(current())this.syncFeedback(deviceNote+'Abgleich fehlgeschlagen · letzter bekannter Stand. Mit Aktualisieren erneut versuchen.');return false;}
+  finally{if(generation===this.syncGeneration){this.syncPending=false;this.paintSync();}}
+ }
  val(role){const s=this.st(role), a=role==='room'?(this.mapping?.room?.startsWith('climate.')?'current_temperature':null):PROFILE[role]?.a; let v=a?s?.attributes?.[a]:s?.state;const n=ncNumber(v),u=s?.attributes?.unit_of_measurement||(role==='room'&&this.mapping?.room?.startsWith('climate.')?this._hass.config?.unit_system?.temperature:null);if(n!=null&&PROFILE[role]?.u==='kW'&&u==='W')v=n/1000;if(n!=null&&PROFILE[role]?.u==='°C'&&u==='°F')v=(n-32)*5/9;return v;}
  available(role){return valid(this.st(role))&&(!(PROFILE[role]?.a||PROFILE[role]?.u)||ncNumber(this.val(role))!=null);}
  unit(role){return PROFILE[role]?.u || this.st(role)?.attributes?.unit_of_measurement || "";}
@@ -59,7 +107,8 @@ class NibeControlCard extends HTMLElement {
  render(){
   const [mode,label]=this.operating();
   this.shadowRoot.innerHTML=`<style>${this.styles()}</style><style>${this.responsiveStyles()}</style><style>${this.plantStyles()}</style><main class="app ${mode}">
-   <header><div><div class="eyebrow">DEINE HAUSTECHNIK · V${VERSION}</div><h1>NIBE Control</h1><p class="sub">Wärmepumpe und Lüftung</p></div><button type="button" class="settings-gear" data-open-settings aria-label="Einstellungen öffnen" title="Einstellungen öffnen"><ha-icon icon="mdi:cog-outline" aria-hidden="true"></ha-icon></button></header>
+   <header><div><div class="eyebrow">DEINE HAUSTECHNIK · V${VERSION}</div><h1>NIBE Control</h1><p class="sub">Wärmepumpe und Lüftung</p></div><div class="header-actions"><button type="button" class="settings-gear" data-refresh aria-label="Daten aktualisieren" title="Daten aktualisieren · NIBE-Abfrage anfordern"><ha-icon icon="mdi:refresh" aria-hidden="true"></ha-icon></button><button type="button" class="settings-gear" data-open-settings aria-label="Einstellungen öffnen" title="Einstellungen öffnen"><ha-icon icon="mdi:cog-outline" aria-hidden="true"></ha-icon></button></div></header>
+   <p class="sync-feedback" data-sync-feedback role="status" aria-live="polite"></p>
    <div class="plant-choices" aria-label="Anlage auswählen"><button type="button" data-plant="heatpump" aria-pressed="false"><ha-icon icon="mdi:heat-pump-outline" aria-hidden="true"></ha-icon><b>Wärmepumpe</b><small>${esc(this.activeProfile?.model||'NIBE')}</small><span data-operation>${esc(label)}</span><strong>${this.live('room')} innen <span data-feature="water">· ${this.live('hotWaterTop')} Warmwasser</span></strong></button><button type="button" data-feature="ventilation" data-plant="ventilation" aria-pressed="false"><ha-icon icon="mdi:hvac" aria-hidden="true"></ha-icon><b>Lüftung</b><small>${esc(this.ventilationModel())}</small><span data-vent-operation></span><strong>${this.live('ventilationSupply',0)} Zuluft · ${this.live('ventilationExtract',0)} Abluft</strong><em data-filter-summary></em></button></div>
    <p class="choice-hint" data-choice-hint>Wähle eine Anlage für Details und Einstellungen.</p>
    <nav hidden aria-label="Wärmepumpenbereiche"><button class="active" data-tab="overview">Übersicht</button><button data-tab="charts">Verläufe</button><button data-tab="setup">Einstellungen</button><button data-tab="diag">Diagnose</button></nav>
@@ -70,7 +119,7 @@ class NibeControlCard extends HTMLElement {
    <section id="ventilation" data-feature="ventilation" hidden>${this.ventilation()}</section>
    <style>[hidden]{display:none!important}/* Hidden views override active tab display. */.plant-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.plant-choices button{display:grid;grid-template-columns:32px 1fr;gap:5px 12px;text-align:left;padding:18px;border:1px solid var(--nc-line);border-radius:18px;background:var(--card-background-color);color:var(--primary-text-color);cursor:pointer;min-width:0}.plant-choices ha-icon{grid-row:span 2;color:var(--nc-teal)}.plant-choices b{font-size:1.1rem}.plant-choices small,.plant-choices span,.plant-choices strong,.plant-choices em{grid-column:2;font-size:.78rem;overflow-wrap:anywhere}.plant-choices small,.plant-choices span{color:var(--secondary-text-color)}.plant-choices strong{font-weight:600;margin-top:6px}.plant-choices em{font-style:normal;color:var(--secondary-text-color)}.plant-choices button:hover{background:var(--nc-card)}.plant-choices button[aria-pressed=true]{border-color:var(--nc-teal);box-shadow:inset 0 0 0 1px var(--nc-teal)}.choice-hint{font-size:.85rem;color:var(--secondary-text-color);margin:24px 0}.plant-choices [data-role]{display:inline;font-size:inherit;color:inherit;grid-column:auto}@media(max-width:520px){.plant-choices{gap:8px}.plant-choices button{grid-template-columns:1fr;padding:12px;gap:6px}.plant-choices ha-icon{grid-row:auto}.plant-choices small,.plant-choices span,.plant-choices strong,.plant-choices em{grid-column:1}.plant-choices strong{font-size:.72rem}nav{position:static}}</style>
   <style>${this.compactStyles()}</style></main>`;
-  this.bind(); this.paintValues();this.applyVisibility();
+  this.bind(); this.paintValues();this.applyVisibility();this.paintSync();
  }
  hero(){
   return `<section class="plant" aria-label="Aktueller Anlagenbetrieb">
@@ -182,12 +231,21 @@ class NibeControlCard extends HTMLElement {
   return ncNumber(raw)!=null?'Statuscode '+raw:String(raw);
  }
  diagnosticDetail(role){
-  const id=this.mapping?.[role];if(role==='alarmActive')return (id?id+' · ':'')+'Nur einen binären Aktivstatus für die gesamte Anlage zuordnen. Keine Alarmnummer oder Installateur-Einstellung. Ein Klasse-1-Signal bestätigt nicht alle Alarmklassen.';if(role==='alarm')return (id?id+' · ':'')+ncAlarm(this.stateValues()).detail;if(!id)return 'Nicht zugeordnet. Eine passende Entity in Einstellungen wählen.';
+  const id=this.mapping?.[role];const source=id?this.sourceTime(role)+' · ':'';
+  if(!id)return role==='alarmActive'?'Kein Aktivstatus zugeordnet. Bei VVM S320/S325: Register 32196 (in HA „Class 1 alarm“), 0 = nicht aktiv, 1 = aktiv. Nur eine verifizierte 0/1-Quelle verwenden.':'Nicht zugeordnet. Eine passende Entity in Einstellungen wählen.';
+  if(this.meta?.[role]?.disabled_by)return `${id} · In Home Assistant deaktiviert. Einstellungen → Geräte & Dienste → NIBE Heat Pump → Gerät → Entitäten → aktivieren. Danach Daten aktualisieren.`;
+  if(role==='alarmActive')return id+' · '+source+'NIBE M12676EN: Aktivstatus 32196 (HA: Class 1 alarm), 0 = nicht aktiv, 1 = aktiv. Andere Werte bleiben unbekannt. Keine Alarmnummer zuordnen.';
+  if(role==='alarm')return id+' · '+source+ncAlarm(this.stateValues()).detail;
   if(this.meta?.[role]?.disabled_by)return `${id} · In Home Assistant deaktiviert. Einstellungen → Geräte & Dienste → NIBE Heat Pump → Gerät → Entitäten → aktivieren.`;
   if(!this.available(role))return `${id} · Liefert keinen nutzbaren Wert. Integration und Zuordnung prüfen.`;
   if(role==='roomSetpoint')return `${id} · Lokaler Registerwert, kein bestätigter MyUplink-Sollwert.`;
   if(role==='sgMode'&&ncNumber(this.val(role))!=null)return `${id} · Code für dieses Profil nicht sicher dokumentiert. SG-Eingänge A/B nutzen, sofern vorhanden.`;
-  return id;
+  return id+' · '+this.sourceTime(role);
+ }
+ sourceTime(role){
+  const state=this.st(role),raw=state?.last_reported||state?.last_updated,time=Date.parse(raw||'');
+  if(!Number.isFinite(time))return 'Kein HA-Zeitstempel verfügbar';
+  return (state.last_reported?'In HA gemeldet: ':'In HA geändert: ')+new Intl.DateTimeFormat('de-DE',{timeZone:this._hass.config?.time_zone||'Europe/Berlin',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(time)+' · kein Nachweis des Geräte-Abfragezeitpunkts';
  }
  openSettings(role){
   this.selectPlant('heatpump');this.shadowRoot.querySelector('[data-tab="setup"]')?.click();if(role){const input=this.shadowRoot.getElementById('map-'+role),group=input?.closest('details');if(group){group.open=true;this.fillMappingSelect(role);}const mode=this.shadowRoot.getElementById('mode-'+role);mode?.focus();mode?.scrollIntoView({block:'center',behavior:'auto'});}
@@ -285,6 +343,7 @@ class NibeControlCard extends HTMLElement {
   this.bindMaintenance();
   this.bindSetup();
   const settingsButton=this.shadowRoot.querySelector('[data-open-settings]');if(settingsButton)settingsButton.onclick=()=>this.openSettings();
+  const refreshButton=this.shadowRoot.querySelector('[data-refresh]');if(refreshButton)refreshButton.onclick=()=>this.refreshData({requestDevice:true,registry:true});
   this.shadowRoot.querySelectorAll('[data-map-role]').forEach(button=>button.onclick=()=>this.openSettings(button.dataset.mapRole));
   const exportButton=this.shadowRoot.getElementById('history-export');if(exportButton)exportButton.onclick=()=>this.exportHistory();
   this.shadowRoot.querySelectorAll('[data-plant]').forEach(b=>b.onclick=()=>this.selectPlant(b.dataset.plant));
@@ -305,6 +364,7 @@ class NibeControlCard extends HTMLElement {
  }
  paintValues(){
   if(!this.shadowRoot?.querySelector("main"))return;
+  this.paintSync();
   this.paintVentilation();this.applyVisibility();
   this.shadowRoot.querySelectorAll('[data-entity]').forEach(el=>el.textContent=this.mapping[el.dataset.entity]||'Keine eindeutige Zuordnung');
   this.shadowRoot.querySelectorAll('[data-candidates]').forEach(el=>{const role=el.dataset.candidates;el.textContent=this.discovery?.ambiguous?.includes(role)?(this.registry||[]).filter(row=>row.config_entry_id===this.discovery.selected&&reg(row.unique_id)===this.activeProfile?.roles[role]?.register).map(row=>row.entity_id).join(' · '):'';});
@@ -329,7 +389,7 @@ class NibeControlCard extends HTMLElement {
   this.shadowRoot.querySelectorAll('[data-destination]').forEach(el=>el.classList.toggle('is-active',operation.active && el.dataset.destination===operation.kind));
   this.shadowRoot.querySelectorAll('[data-branch]').forEach(el=>el.textContent=operation.active && el.dataset.branch===operation.kind?'Aktiv':operation.kind==='unknown' || ['alarm','defrost','offline','unknown'].includes(operation.mode)?'Nicht bestätigt':'Keine Wärmeerzeugung');
   const note=this.shadowRoot.querySelector('[data-operation-detail]');
-  if(note)note.textContent=this.activeProfile?.priorityCodes===false?'Individuelles Profil: Betriebspriorität wird technisch angezeigt; Heiz-/Warmwasserzweige werden nicht aus ungeprüften Codes abgeleitet.':operation.kind==='unknown'?'Für die sichere Unterscheidung von Heizung und Warmwasser wird die Betriebspriorität 31029 benötigt.':'Betriebsart aus NIBE-Priorität 31029 · Aktivität aus Verdichter / Zusatzheizung.';
+  if(note)note.textContent=(this.activeProfile?.priorityCodes===false?'Individuelles Profil: Betriebspriorität wird technisch angezeigt; Heiz-/Warmwasserzweige werden nicht aus ungeprüften Codes abgeleitet.':operation.kind==='unknown'?'Für die sichere Unterscheidung von Heizung und Warmwasser wird die Betriebspriorität 31029 benötigt.':'Betriebsart aus NIBE-Priorität 31029 · Aktivität aus Verdichter / Zusatzheizung.')+' '+(ncNumber(this.val('compressorHz'))===0&&ncNumber(this.val('additionalHeat'))>0?'Der Verdichter steht; der Heizstab meldet aktive Wärmeerzeugung. ':'')+'Die Quellen können zeitversetzt eintreffen; einzelne HA-Zeitstempel stehen in der Diagnose.';
   const sg=ncSg(this.stateValues());
   this.shadowRoot.querySelectorAll('[data-sg]').forEach(el=>el.textContent=sg.label);
   this.shadowRoot.querySelectorAll('[data-sg-detail]').forEach(el=>el.textContent=sg.detail);
@@ -366,7 +426,7 @@ class NibeControlCard extends HTMLElement {
   const sets={heating:[["outdoor","#78aee8"],["supplyTarget","#e9b15b"],["supply","#ee765f"],["return","#8fc58a"]],frequency:[["compressorHz","#49b6a1"]],power:[["electrical","#e9b15b"]],water:[["hotWaterCharge","#55a8d8"],["hotWaterTop","#ee765f"]]};
   const roles=[...new Set(Object.values(sets).flat().map(x=>x[0]).filter(r=>this.mapping[r]&&this.st(r)))]; if(!roles.length){this.shadowRoot.querySelectorAll('.plot').forEach(p=>p.innerHTML='<div class="empty">Keine Historien-Entitäten verfügbar</div>');return;}
   const end=new Date(), start=new Date(end-(this.historyHours||24)*3600000);const historyWindow={start:+start,end:+end};const generation=(this.historyGeneration||0)+1;this.historyGeneration=generation;this.historyPending=true;
-  try {const result=await this._hass.callWS({type:"history/history_during_period",start_time:start.toISOString(),end_time:end.toISOString(),entity_ids:[...new Set(roles.map(r=>this.mapping[r]))],include_start_time_state:true,minimal_response:true,no_attributes:true,significant_changes_only:false});
+  try {const result=await ncDeadline(this._hass.callWS({type:"history/history_during_period",start_time:start.toISOString(),end_time:end.toISOString(),entity_ids:[...new Set(roles.map(r=>this.mapping[r]))],include_start_time_state:true,minimal_response:true,no_attributes:true,significant_changes_only:false}));
    if(generation!==this.historyGeneration)return;
    this.shadowRoot.querySelectorAll('[data-period-label]').forEach(el=>el.textContent=(this.historyHours||24)+' STUNDEN');this.historyWindow=historyWindow;if(this.inspectionTime!=null)this.inspectionTime=Math.max(historyWindow.start,Math.min(historyWindow.end,this.inspectionTime));const history=this.normalizeHistory(result);
    this.chartInspectors={};for(const [key,series] of Object.entries(sets)) this.draw(key,series,history);
@@ -395,7 +455,7 @@ class NibeControlCard extends HTMLElement {
   const legend=host.querySelector('.chart-legend');for(const x of found){const button=document.createElement('button');button.type='button';button.dataset.toggle=x.r;const hidden=this.hiddenSeries?.[key]?.has(x.r)||false;button.setAttribute('aria-pressed',String(!hidden));if(hidden)host.querySelector(`[data-series="${x.r}"]`).style.display='none';button.style.setProperty('--c',x.c);button.textContent=PROFILE[x.r].l+(x.points.some(p=>p.value!=null)?'':' · Keine Historie');button.disabled=!x.points.some(p=>p.value!=null);button.onclick=()=>{const visible=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(visible));this.hiddenSeries=this.hiddenSeries||{};this.hiddenSeries[key]=this.hiddenSeries[key]||new Set();if(visible)this.hiddenSeries[key].delete(x.r);else this.hiddenSeries[key].add(x.r);host.querySelector(`[data-series="${x.r}"]`).style.display=visible?'':'none';};legend.append(button);}
  }
  inspectTime(time,live=false){this.inspectionTime=live?null:time;for(const inspect of Object.values(this.chartInspectors||{}))inspect(time);}
- compactStyles(){return `.alarm-evidence{grid-column:1/-1;color:var(--secondary-text-color);font-size:.75rem;line-height:1.5;border-left:2px solid var(--warning-color);padding:6px 10px;margin:0 0 10px}
+ compactStyles(){return `.header-actions{display:flex;gap:8px;flex-shrink:0}.sync-feedback{min-height:2.8em;margin:0 0 12px;color:var(--secondary-text-color);font-size:.72rem;line-height:1.4;overflow-wrap:anywhere}.settings-gear:disabled{opacity:.5;cursor:default}.settings-gear[aria-busy=true]{cursor:wait}.settings-gear:active:enabled{background:var(--nc-card)}.alarm-evidence{grid-column:1/-1;color:var(--secondary-text-color);font-size:.75rem;line-height:1.5;border-left:2px solid var(--warning-color);padding:6px 10px;margin:0 0 10px}
 .settings-gear{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1px solid var(--nc-line);border-radius:12px;background:transparent;color:var(--secondary-text-color);cursor:pointer}.settings-gear:hover{background:var(--nc-card);color:var(--primary-text-color)}.settings-gear ha-icon{--mdc-icon-size:22px}.mapping-field select{width:100%;min-height:44px;margin-top:6px}.mapping-field select:disabled{opacity:.55;cursor:default}.mapping-field .entity-label{margin-top:10px;font-size:.75rem;font-weight:400}.diagnostic-help{grid-column:1/-1;font-size:.75rem;overflow-wrap:anywhere}.diagnostic-help p{line-height:1.5;margin:0 0 8px}.diagnostic-help button,#history-export{min-height:44px;border:1px solid var(--nc-line);border-radius:10px;padding:8px 12px;color:var(--primary-text-color);background:var(--card-background-color);cursor:pointer}.history-tools{display:grid;grid-template-columns:minmax(0,1fr) 94px;align-items:end;gap:10px}.history-tools .mode-control{display:grid;gap:6px;margin:0;min-width:0}.history-tools .mode-control select{width:100%;min-width:0;min-height:44px;height:44px;box-sizing:border-box;margin:0}#history-export{display:flex;align-items:center;gap:6px;width:94px;min-width:0;min-height:44px;height:44px;box-sizing:border-box;justify-content:center;align-self:end;padding:0 9px;background:transparent;color:var(--secondary-text-color);font-size:.75rem;white-space:nowrap}#history-export ha-icon{--mdc-icon-size:18px}#history-export:hover:enabled{color:var(--primary-text-color)}[data-export-feedback]:empty{display:none}#history-export:disabled{opacity:.55;cursor:wait}#history-export:hover:enabled,.diagnostic-help button:hover{background:var(--nc-card)}.diagnostic-help summary{min-height:44px}.settings-gear:focus-visible,#history-export:focus-visible,.diagnostic-help button:focus-visible{outline:3px solid var(--nc-focus);outline-offset:2px}
 .setup fieldset{border:0;border-top:1px solid var(--nc-line);margin:16px 0;padding:16px 0;min-width:0}.setup legend{font-weight:650;padding-right:12px}.setup fieldset>label{display:block;margin-top:12px;font-size:.85rem}.setup select,.mapping-field input:not([type=checkbox]){display:block;width:100%;box-sizing:border-box;min-height:44px;background:var(--card-background-color);color:var(--primary-text-color);border:1px solid var(--nc-line);border-radius:10px;padding:10px;margin-top:6px}.setup small{display:block;overflow-wrap:anywhere;color:var(--secondary-text-color);font-size:.72rem;line-height:1.5}.mapping-field{padding:12px 0;border-top:1px solid var(--nc-line)}.mapping-field>label{display:block;font-size:.85rem;font-weight:600}.mapping-field .exclude{display:flex;align-items:center;gap:8px;min-height:44px;font-weight:400;font-size:.75rem}.mapping-field input[aria-invalid=true]{border-color:var(--error-color)}.setup button,[data-open-settings]{min-height:44px;border:1px solid var(--nc-line);border-radius:10px;padding:10px 14px;background:var(--card-background-color);color:var(--primary-text-color);cursor:pointer}.setup button:disabled{cursor:wait;opacity:.65}.setup [data-setup-feedback]{min-height:44px}.plant-choices:has([data-plant=ventilation][hidden]){grid-template-columns:1fr}.setup input:focus-visible,.setup select:focus-visible,[data-open-settings]:focus-visible{outline:3px solid var(--nc-focus);outline-offset:2px}
 
@@ -512,3 +572,4 @@ window.customStrategies=window.customStrategies||[];
 if(!window.customStrategies.some(x=>x.type==="nibe-control")) window.customStrategies.push({type:"nibe-control",strategyType:"dashboard",name:"NIBE Control",description:"Dynamisches Technik-Dashboard für NIBE S-Serie",documentationURL:"https://github.com/Soul7495/NIBE-Control"});
 window.customCards=window.customCards||[];
 if(!window.customCards.some(x=>x.type==="nibe-control-card")) window.customCards.push({type:"nibe-control-card",name:"NIBE Control",description:"NIBE S-Serie Anlagenübersicht"});
+
